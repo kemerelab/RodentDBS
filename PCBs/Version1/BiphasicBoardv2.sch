@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE eagle SYSTEM "eagle.dtd">
-<eagle version="6.6.0">
+<eagle version="6.5.0">
 <drawing>
 <settings>
 <setting alwaysvectorfont="no"/>
@@ -6114,8 +6114,8 @@ Standard schematic elements and footprints for 5mm, 3mm, 1206, and 0603 sized LE
 <instances>
 <instance part="SV1" gate="1" x="-20.32" y="106.68" rot="R270"/>
 <instance part="R_INPUT_FS1" gate="G$1" x="17.78" y="63.5"/>
-<instance part="R_PULLUP_SCL" gate="G$1" x="22.86" y="71.12" rot="R270"/>
-<instance part="R_PULLUP_SDA" gate="G$1" x="20.32" y="73.66" rot="R90"/>
+<instance part="R_PULLUP_SCL" gate="G$1" x="22.86" y="76.2" rot="R270"/>
+<instance part="R_PULLUP_SDA" gate="G$1" x="17.78" y="76.2" rot="R90"/>
 <instance part="R_INPUT_FS0" gate="G$1" x="48.26" y="50.8"/>
 <instance part="R_PULLUP_RST" gate="G$1" x="-7.62" y="101.6" rot="R90"/>
 <instance part="DS4432U+" gate="G$1" x="38.1" y="66.04"/>
@@ -6137,20 +6137,22 @@ Standard schematic elements and footprints for 5mm, 3mm, 1206, and 0603 sized LE
 <segment>
 <wire x1="5.08" y1="66.04" x2="22.86" y2="66.04" width="0.1524" layer="91"/>
 <pinref part="R_PULLUP_SCL" gate="G$1" pin="2"/>
+<wire x1="22.86" y1="71.12" x2="22.86" y2="66.04" width="0.1524" layer="91"/>
 <wire x1="22.86" y1="66.04" x2="25.4" y2="66.04" width="0.1524" layer="91"/>
-<junction x="22.86" y="66.04"/>
 <pinref part="DS4432U+" gate="G$1" pin="SCL"/>
 <pinref part="MSP430" gate="G$1" pin="14"/>
+<junction x="22.86" y="66.04"/>
 </segment>
 </net>
 <net name="N$2" class="0">
 <segment>
-<wire x1="5.08" y1="68.58" x2="20.32" y2="68.58" width="0.1524" layer="91"/>
+<wire x1="5.08" y1="68.58" x2="17.78" y2="68.58" width="0.1524" layer="91"/>
 <pinref part="R_PULLUP_SDA" gate="G$1" pin="1"/>
-<wire x1="20.32" y1="68.58" x2="25.4" y2="68.58" width="0.1524" layer="91"/>
-<junction x="20.32" y="68.58"/>
+<wire x1="17.78" y1="71.12" x2="17.78" y2="68.58" width="0.1524" layer="91"/>
+<wire x1="17.78" y1="68.58" x2="25.4" y2="68.58" width="0.1524" layer="91"/>
 <pinref part="DS4432U+" gate="G$1" pin="SDA"/>
 <pinref part="MSP430" gate="G$1" pin="15"/>
+<junction x="17.78" y="68.58"/>
 </segment>
 </net>
 <net name="VDD" class="0">
@@ -6164,15 +6166,14 @@ Standard schematic elements and footprints for 5mm, 3mm, 1206, and 0603 sized LE
 <wire x1="-30.48" y1="99.06" x2="-30.48" y2="109.22" width="0.1524" layer="91"/>
 <wire x1="-30.48" y1="109.22" x2="-7.62" y2="109.22" width="0.1524" layer="91"/>
 <pinref part="R_PULLUP_SDA" gate="G$1" pin="2"/>
-<wire x1="-7.62" y1="109.22" x2="20.32" y2="109.22" width="0.1524" layer="91"/>
-<wire x1="20.32" y1="109.22" x2="20.32" y2="78.74" width="0.1524" layer="91"/>
-<wire x1="20.32" y1="78.74" x2="22.86" y2="78.74" width="0.1524" layer="91"/>
-<wire x1="22.86" y1="78.74" x2="53.34" y2="78.74" width="0.1524" layer="91"/>
-<wire x1="53.34" y1="78.74" x2="53.34" y2="68.58" width="0.1524" layer="91"/>
+<wire x1="-7.62" y1="109.22" x2="17.78" y2="109.22" width="0.1524" layer="91"/>
+<wire x1="17.78" y1="109.22" x2="17.78" y2="83.82" width="0.1524" layer="91"/>
+<wire x1="17.78" y1="81.28" x2="17.78" y2="83.82" width="0.1524" layer="91"/>
+<wire x1="17.78" y1="83.82" x2="22.86" y2="83.82" width="0.1524" layer="91"/>
+<wire x1="22.86" y1="81.28" x2="22.86" y2="83.82" width="0.1524" layer="91"/>
+<wire x1="22.86" y1="83.82" x2="53.34" y2="83.82" width="0.1524" layer="91"/>
+<wire x1="53.34" y1="83.82" x2="53.34" y2="68.58" width="0.1524" layer="91"/>
 <pinref part="R_PULLUP_SCL" gate="G$1" pin="1"/>
-<wire x1="22.86" y1="78.74" x2="22.86" y2="76.2" width="0.1524" layer="91"/>
-<junction x="22.86" y="78.74"/>
-<junction x="20.32" y="78.74"/>
 <junction x="-30.48" y="99.06"/>
 <junction x="-45.72" y="81.28"/>
 <wire x1="-45.72" y1="81.28" x2="-53.34" y2="81.28" width="0.1524" layer="91"/>
@@ -6194,6 +6195,8 @@ Standard schematic elements and footprints for 5mm, 3mm, 1206, and 0603 sized LE
 <wire x1="-38.1" y1="93.98" x2="-45.72" y2="93.98" width="0.1524" layer="91"/>
 <junction x="-45.72" y="93.98"/>
 <junction x="-45.72" y="81.28"/>
+<junction x="17.78" y="83.82"/>
+<junction x="22.86" y="83.82"/>
 </segment>
 </net>
 <net name="GND" class="0">
