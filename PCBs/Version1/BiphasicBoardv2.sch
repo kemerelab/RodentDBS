@@ -6094,7 +6094,7 @@ Standard schematic elements and footprints for 5mm, 3mm, 1206, and 0603 sized LE
 <part name="R_PULLUP_SCL" library="BiphasicBoard" deviceset="R-US_" device="R0603" value="1k"/>
 <part name="R_PULLUP_SDA" library="BiphasicBoard" deviceset="R-US_" device="R0603" value="1k"/>
 <part name="R_INPUT_FS0" library="BiphasicBoard" deviceset="R-US_" device="R0603" value="47k"/>
-<part name="R_PULLUP_RST" library="BiphasicBoard" deviceset="R-US_" device="R0603"/>
+<part name="R_PULLUP_RST" library="BiphasicBoard" deviceset="R-US_" device="R0603" value="R_PU_RST"/>
 <part name="DS4432U+" library="BiphasicBoard" deviceset="DS4432U+" device=""/>
 <part name="MSP430" library="BiphasicBoard" deviceset="MSP430" device=""/>
 <part name="TS3A4751_0" library="BiphasicBoard" deviceset="TS3A4751" device=""/>

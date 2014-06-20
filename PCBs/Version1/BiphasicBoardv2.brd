@@ -130,6 +130,8 @@
 <wire x1="28.575" y1="17.78" x2="0" y2="17.78" width="0" layer="20"/>
 <wire x1="0" y1="17.78" x2="0" y2="0" width="0" layer="20"/>
 <text x="8.927" y="0.8225" size="1.016" layer="51" font="vector" ratio="15">Biphasic v1.2</text>
+<text x="22.225" y="15.24" size="0.635" layer="51" font="vector" ratio="15">VCC</text>
+<text x="22.225" y="12.7" size="0.635" layer="51" font="vector" ratio="15">GND</text>
 </plain>
 <libraries>
 <library name="BiphasicBoard">
@@ -1629,16 +1631,16 @@ design rules under a new name.</description>
 <attribute name="VALUE" x="19.558" y="4.2545" size="0.635" layer="28" font="vector" ratio="15" rot="MR180"/>
 </element>
 <element name="R_INPUT_FS0" library="BiphasicBoard" package="R0603" value="47k" x="1.715" y="3.922" smashed="yes" rot="MR90">
-<attribute name="VALUE" x="2.985" y="3.2235" size="0.635" layer="28" font="vector" ratio="15" rot="MR90"/>
+<attribute name="VALUE" x="2.7945" y="3.287" size="0.635" layer="28" font="vector" ratio="15" rot="MR90"/>
 </element>
-<element name="R_PULLUP_RST" library="BiphasicBoard" package="R0603" value="" x="16.6065" y="15.467" smashed="yes" rot="MR0">
-<attribute name="VALUE" x="17.4955" y="13.435" size="1.27" layer="28" rot="MR0"/>
+<element name="R_PULLUP_RST" library="BiphasicBoard" package="R0603" value="R_PU_RST" x="16.6065" y="15.467" smashed="yes" rot="MR0">
+<attribute name="VALUE" x="18.7655" y="16.737" size="0.635" layer="28" font="vector" ratio="15" rot="MR0"/>
 </element>
 <element name="DS4432U+" library="BiphasicBoard" package="8_PIN" value="" x="7.874" y="4.5085" smashed="yes" rot="MR180">
 <attribute name="NAME" x="5.1943" y="6.9342" size="0.635" layer="26" font="vector" ratio="15" rot="MR180"/>
 </element>
 <element name="MSP430" library="BiphasicBoard" package="20_PIN" value="" x="15.4305" y="12.5095" smashed="yes" rot="R270">
-<attribute name="NAME" x="14.9186" y="16.5886" size="0.635" layer="25" font="vector" ratio="15"/>
+<attribute name="NAME" x="13.9661" y="16.5251" size="0.635" layer="25" font="vector" ratio="15"/>
 </element>
 <element name="TS3A4751_0" library="BiphasicBoard" package="14_PIN" value="" x="9.8425" y="12.0015" smashed="yes" rot="MR180"/>
 <element name="TS3A4751_1" library="BiphasicBoard" package="14_PIN" value="" x="15.1765" y="5.0165" smashed="yes" rot="R180">
