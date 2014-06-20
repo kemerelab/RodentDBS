@@ -13,24 +13,18 @@ eagle.epf
 
 # CAM files
 *.$$$
-*.cmp
-*.ly2
-*.l15
-*.sol
-*.plc
-*.stc
-*.sts
-*.crc
-*.crs
+*.GBL
+*.GBO
+*.GBP
+*.GBS
+*.GML
+*.GTL
+*.GTO
+*.GTP
+*.GTS
+*.TXT
 
 *.dri
-*.drl
 *.gpi
-*.pls
 
-*.drd
-*.drd.*
-
-*.info
-
-*.eps
+.DS_Store
