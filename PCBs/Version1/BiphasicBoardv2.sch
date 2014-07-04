@@ -6090,11 +6090,11 @@ Standard schematic elements and footprints for 5mm, 3mm, 1206, and 0603 sized LE
 </classes>
 <parts>
 <part name="SV1" library="BiphasicBoard" deviceset="MA04-1" device=""/>
-<part name="R_INPUT_FS1" library="BiphasicBoard" deviceset="R-US_" device="R0603" value="47k"/>
+<part name="R_INPUT_FS1" library="BiphasicBoard" deviceset="R-US_" device="R0603" value="43k"/>
 <part name="R_PULLUP_SCL" library="BiphasicBoard" deviceset="R-US_" device="R0603" value="1k"/>
 <part name="R_PULLUP_SDA" library="BiphasicBoard" deviceset="R-US_" device="R0603" value="1k"/>
 <part name="R_INPUT_FS0" library="BiphasicBoard" deviceset="R-US_" device="R0603" value="47k"/>
-<part name="R_PULLUP_RST" library="BiphasicBoard" deviceset="R-US_" device="R0603"/>
+<part name="R_PULLUP_RST" library="BiphasicBoard" deviceset="R-US_" device="R0603" value="43k"/>
 <part name="DS4432U+" library="BiphasicBoard" deviceset="DS4432U+" device=""/>
 <part name="MSP430" library="BiphasicBoard" deviceset="MSP430" device=""/>
 <part name="TS3A4751_0" library="BiphasicBoard" deviceset="TS3A4751" device=""/>
@@ -6102,10 +6102,11 @@ Standard schematic elements and footprints for 5mm, 3mm, 1206, and 0603 sized LE
 <part name="OUT_CHS" library="BiphasicBoard" deviceset="MA04-1" device=""/>
 <part name="C1_SUPPLY" library="resistor" deviceset="C-US" device="C0603"/>
 <part name="LED6" library="SparkFun-LED" deviceset="LED" device="1206" value="GREEN"/>
-<part name="R_INPUT_FS2" library="BiphasicBoard" deviceset="R-US_" device="R0603" value="47k"/>
-<part name="R_INPUT_FS3" library="BiphasicBoard" deviceset="R-US_" device="R0603" value="47k"/>
+<part name="R_LOAD_EX1" library="BiphasicBoard" deviceset="R-US_" device="R0603" value="10k"/>
+<part name="R_LOAD_EX" library="BiphasicBoard" deviceset="R-US_" device="R0603" value="10k"/>
 <part name="V_DIV" library="BiphasicBoard" deviceset="R-US_" device="R0603" value="1M"/>
 <part name="V_DIV2" library="BiphasicBoard" deviceset="R-US_" device="R0603" value="1M"/>
+<part name="R_LED" library="BiphasicBoard" deviceset="R-US_" device="R0603" value="R_LED"/>
 </parts>
 <sheets>
 <sheet>
@@ -6114,8 +6115,8 @@ Standard schematic elements and footprints for 5mm, 3mm, 1206, and 0603 sized LE
 <instances>
 <instance part="SV1" gate="1" x="-20.32" y="106.68" rot="R270"/>
 <instance part="R_INPUT_FS1" gate="G$1" x="17.78" y="63.5"/>
-<instance part="R_PULLUP_SCL" gate="G$1" x="22.86" y="71.12" rot="R270"/>
-<instance part="R_PULLUP_SDA" gate="G$1" x="20.32" y="73.66" rot="R90"/>
+<instance part="R_PULLUP_SCL" gate="G$1" x="22.86" y="76.2" rot="R270"/>
+<instance part="R_PULLUP_SDA" gate="G$1" x="17.78" y="76.2" rot="R90"/>
 <instance part="R_INPUT_FS0" gate="G$1" x="48.26" y="50.8"/>
 <instance part="R_PULLUP_RST" gate="G$1" x="-7.62" y="101.6" rot="R90"/>
 <instance part="DS4432U+" gate="G$1" x="38.1" y="66.04"/>
@@ -6125,10 +6126,11 @@ Standard schematic elements and footprints for 5mm, 3mm, 1206, and 0603 sized LE
 <instance part="OUT_CHS" gate="1" x="-86.36" y="25.4" rot="R90"/>
 <instance part="C1_SUPPLY" gate="G$1" x="-33.02" y="93.98" rot="R270"/>
 <instance part="LED6" gate="G$1" x="17.78" y="38.1" rot="R90"/>
-<instance part="R_INPUT_FS2" gate="G$1" x="-104.14" y="33.02"/>
-<instance part="R_INPUT_FS3" gate="G$1" x="-73.66" y="38.1"/>
+<instance part="R_LOAD_EX1" gate="G$1" x="-104.14" y="33.02"/>
+<instance part="R_LOAD_EX" gate="G$1" x="-73.66" y="38.1"/>
 <instance part="V_DIV" gate="G$1" x="-58.42" y="55.88" rot="R90"/>
 <instance part="V_DIV2" gate="G$1" x="-58.42" y="45.72" rot="R90"/>
+<instance part="R_LED" gate="G$1" x="22.86" y="48.26" rot="R90"/>
 </instances>
 <busses>
 </busses>
@@ -6137,20 +6139,22 @@ Standard schematic elements and footprints for 5mm, 3mm, 1206, and 0603 sized LE
 <segment>
 <wire x1="5.08" y1="66.04" x2="22.86" y2="66.04" width="0.1524" layer="91"/>
 <pinref part="R_PULLUP_SCL" gate="G$1" pin="2"/>
+<wire x1="22.86" y1="71.12" x2="22.86" y2="66.04" width="0.1524" layer="91"/>
 <wire x1="22.86" y1="66.04" x2="25.4" y2="66.04" width="0.1524" layer="91"/>
-<junction x="22.86" y="66.04"/>
 <pinref part="DS4432U+" gate="G$1" pin="SCL"/>
 <pinref part="MSP430" gate="G$1" pin="14"/>
+<junction x="22.86" y="66.04"/>
 </segment>
 </net>
 <net name="N$2" class="0">
 <segment>
-<wire x1="5.08" y1="68.58" x2="20.32" y2="68.58" width="0.1524" layer="91"/>
+<wire x1="5.08" y1="68.58" x2="17.78" y2="68.58" width="0.1524" layer="91"/>
 <pinref part="R_PULLUP_SDA" gate="G$1" pin="1"/>
-<wire x1="20.32" y1="68.58" x2="25.4" y2="68.58" width="0.1524" layer="91"/>
-<junction x="20.32" y="68.58"/>
+<wire x1="17.78" y1="71.12" x2="17.78" y2="68.58" width="0.1524" layer="91"/>
+<wire x1="17.78" y1="68.58" x2="25.4" y2="68.58" width="0.1524" layer="91"/>
 <pinref part="DS4432U+" gate="G$1" pin="SDA"/>
 <pinref part="MSP430" gate="G$1" pin="15"/>
+<junction x="17.78" y="68.58"/>
 </segment>
 </net>
 <net name="VDD" class="0">
@@ -6164,15 +6168,14 @@ Standard schematic elements and footprints for 5mm, 3mm, 1206, and 0603 sized LE
 <wire x1="-30.48" y1="99.06" x2="-30.48" y2="109.22" width="0.1524" layer="91"/>
 <wire x1="-30.48" y1="109.22" x2="-7.62" y2="109.22" width="0.1524" layer="91"/>
 <pinref part="R_PULLUP_SDA" gate="G$1" pin="2"/>
-<wire x1="-7.62" y1="109.22" x2="20.32" y2="109.22" width="0.1524" layer="91"/>
-<wire x1="20.32" y1="109.22" x2="20.32" y2="78.74" width="0.1524" layer="91"/>
-<wire x1="20.32" y1="78.74" x2="22.86" y2="78.74" width="0.1524" layer="91"/>
-<wire x1="22.86" y1="78.74" x2="53.34" y2="78.74" width="0.1524" layer="91"/>
-<wire x1="53.34" y1="78.74" x2="53.34" y2="68.58" width="0.1524" layer="91"/>
+<wire x1="-7.62" y1="109.22" x2="17.78" y2="109.22" width="0.1524" layer="91"/>
+<wire x1="17.78" y1="109.22" x2="17.78" y2="83.82" width="0.1524" layer="91"/>
+<wire x1="17.78" y1="81.28" x2="17.78" y2="83.82" width="0.1524" layer="91"/>
+<wire x1="17.78" y1="83.82" x2="22.86" y2="83.82" width="0.1524" layer="91"/>
+<wire x1="22.86" y1="81.28" x2="22.86" y2="83.82" width="0.1524" layer="91"/>
+<wire x1="22.86" y1="83.82" x2="53.34" y2="83.82" width="0.1524" layer="91"/>
+<wire x1="53.34" y1="83.82" x2="53.34" y2="68.58" width="0.1524" layer="91"/>
 <pinref part="R_PULLUP_SCL" gate="G$1" pin="1"/>
-<wire x1="22.86" y1="78.74" x2="22.86" y2="76.2" width="0.1524" layer="91"/>
-<junction x="22.86" y="78.74"/>
-<junction x="20.32" y="78.74"/>
 <junction x="-30.48" y="99.06"/>
 <junction x="-45.72" y="81.28"/>
 <wire x1="-45.72" y1="81.28" x2="-53.34" y2="81.28" width="0.1524" layer="91"/>
@@ -6194,6 +6197,8 @@ Standard schematic elements and footprints for 5mm, 3mm, 1206, and 0603 sized LE
 <wire x1="-38.1" y1="93.98" x2="-45.72" y2="93.98" width="0.1524" layer="91"/>
 <junction x="-45.72" y="93.98"/>
 <junction x="-45.72" y="81.28"/>
+<junction x="17.78" y="83.82"/>
+<junction x="22.86" y="83.82"/>
 </segment>
 </net>
 <net name="GND" class="0">
@@ -6251,12 +6256,12 @@ Standard schematic elements and footprints for 5mm, 3mm, 1206, and 0603 sized LE
 <pinref part="C1_SUPPLY" gate="G$1" pin="1"/>
 <wire x1="-30.48" y1="93.98" x2="-22.86" y2="93.98" width="0.1524" layer="91"/>
 <junction x="-22.86" y="93.98"/>
-<pinref part="LED6" gate="G$1" pin="C"/>
-<wire x1="22.86" y1="38.1" x2="22.86" y2="60.96" width="0.1524" layer="91"/>
 <junction x="22.86" y="60.96"/>
 <junction x="-58.42" y="22.86"/>
 <pinref part="V_DIV2" gate="G$1" pin="1"/>
+<wire x1="22.86" y1="53.34" x2="22.86" y2="60.96" width="0.1524" layer="91"/>
 <wire x1="-58.42" y1="40.64" x2="-58.42" y2="22.86" width="0.1524" layer="91"/>
+<pinref part="R_LED" gate="G$1" pin="2"/>
 </segment>
 </net>
 <net name="TEST" class="0">
@@ -6374,7 +6379,7 @@ Standard schematic elements and footprints for 5mm, 3mm, 1206, and 0603 sized LE
 <wire x1="-40.64" y1="40.64" x2="-40.64" y2="38.1" width="0.1524" layer="91"/>
 <pinref part="TS3A4751_0" gate="G$1" pin="COM1"/>
 <junction x="-40.64" y="38.1"/>
-<pinref part="R_INPUT_FS3" gate="G$1" pin="2"/>
+<pinref part="R_LOAD_EX" gate="G$1" pin="2"/>
 <wire x1="-68.58" y1="38.1" x2="-40.64" y2="38.1" width="0.1524" layer="91"/>
 </segment>
 </net>
@@ -6410,7 +6415,7 @@ Standard schematic elements and footprints for 5mm, 3mm, 1206, and 0603 sized LE
 <wire x1="-114.3" y1="68.58" x2="-114.3" y2="33.02" width="0.1524" layer="91"/>
 <wire x1="-114.3" y1="33.02" x2="-109.22" y2="33.02" width="0.1524" layer="91"/>
 <junction x="-104.14" y="68.58"/>
-<pinref part="R_INPUT_FS2" gate="G$1" pin="1"/>
+<pinref part="R_LOAD_EX1" gate="G$1" pin="1"/>
 </segment>
 </net>
 <net name="LOAD2_1" class="0">
@@ -6463,7 +6468,7 @@ Standard schematic elements and footprints for 5mm, 3mm, 1206, and 0603 sized LE
 <net name="N$3" class="0">
 <segment>
 <pinref part="OUT_CHS" gate="1" pin="4"/>
-<pinref part="R_INPUT_FS2" gate="G$1" pin="2"/>
+<pinref part="R_LOAD_EX1" gate="G$1" pin="2"/>
 <wire x1="-99.06" y1="33.02" x2="-88.9" y2="33.02" width="0.1524" layer="91"/>
 </segment>
 </net>
@@ -6472,7 +6477,7 @@ Standard schematic elements and footprints for 5mm, 3mm, 1206, and 0603 sized LE
 <pinref part="OUT_CHS" gate="1" pin="2"/>
 <wire x1="-83.82" y1="33.02" x2="-83.82" y2="38.1" width="0.1524" layer="91"/>
 <wire x1="-83.82" y1="38.1" x2="-78.74" y2="38.1" width="0.1524" layer="91"/>
-<pinref part="R_INPUT_FS3" gate="G$1" pin="1"/>
+<pinref part="R_LOAD_EX" gate="G$1" pin="1"/>
 </segment>
 </net>
 <net name="N$6" class="0">
@@ -6498,6 +6503,13 @@ Standard schematic elements and footprints for 5mm, 3mm, 1206, and 0603 sized LE
 <pinref part="MSP430" gate="G$1" pin="2"/>
 <wire x1="-41.91" y1="78.74" x2="-40.64" y2="78.74" width="0.1524" layer="91"/>
 <junction x="-41.91" y="78.74"/>
+</segment>
+</net>
+<net name="N$9" class="0">
+<segment>
+<pinref part="R_LED" gate="G$1" pin="1"/>
+<pinref part="LED6" gate="G$1" pin="C"/>
+<wire x1="22.86" y1="38.1" x2="22.86" y2="43.18" width="0.1524" layer="91"/>
 </segment>
 </net>
 </nets>
