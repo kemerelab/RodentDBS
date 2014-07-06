@@ -1621,7 +1621,11 @@ design rules under a new name.</description>
 <attribute name="OC_FARNELL" value="unknown" x="25.8525" y="11.85" size="1.778" layer="27" rot="R270" display="off"/>
 <attribute name="VALUE" x="27.5035" y="11.215" size="1.27" layer="27" ratio="10" rot="R270"/>
 </element>
+<<<<<<< HEAD
 <element name="R_INPUT_FS1" library="BiphasicBoard" package="R0603" value="47k" x="6.588" y="1.667" smashed="yes" rot="R180">
+=======
+<element name="R_INPUT_FS1" library="BiphasicBoard" package="R0603" value="43k" x="6.588" y="1.667" smashed="yes" rot="R180">
+>>>>>>> 59196ca3f06178552fc1e99e7d4526753634122a
 <attribute name="VALUE" x="4.937" y="1.667" size="0.635" layer="27" font="vector" ratio="15" rot="R180"/>
 </element>
 <element name="R_PULLUP_SCL" library="BiphasicBoard" package="R0603" value="1k" x="18.9865" y="8.128" smashed="yes" rot="MR90">
@@ -1633,7 +1637,11 @@ design rules under a new name.</description>
 <element name="R_INPUT_FS0" library="BiphasicBoard" package="R0603" value="47k" x="1.715" y="3.922" smashed="yes" rot="MR90">
 <attribute name="VALUE" x="2.7945" y="3.287" size="0.635" layer="28" font="vector" ratio="15" rot="MR90"/>
 </element>
+<<<<<<< HEAD
 <element name="R_PULLUP_RST" library="BiphasicBoard" package="R0603" value="R_PU_RST" x="16.6065" y="15.467" smashed="yes" rot="MR0">
+=======
+<element name="R_PULLUP_RST" library="BiphasicBoard" package="R0603" value="43k" x="16.6065" y="15.467" smashed="yes" rot="MR0">
+>>>>>>> 59196ca3f06178552fc1e99e7d4526753634122a
 <attribute name="VALUE" x="18.7655" y="16.737" size="0.635" layer="28" font="vector" ratio="15" rot="MR0"/>
 </element>
 <element name="DS4432U+" library="BiphasicBoard" package="8_PIN" value="" x="7.874" y="4.5085" smashed="yes" rot="MR180">
@@ -1653,6 +1661,7 @@ design rules under a new name.</description>
 <attribute name="OC_FARNELL" value="unknown" x="1.9685" y="11.2395" size="1.778" layer="27" rot="R270" display="off"/>
 <attribute name="NAME" x="3.683" y="13.2715" size="0.635" layer="25" font="vector" ratio="15" rot="R270"/>
 <attribute name="VALUE" x="3.6195" y="10.6045" size="1.27" layer="27" ratio="10" rot="R270"/>
+<<<<<<< HEAD
 </element>
 <element name="C1_SUPPLY" library="resistor" package="C0603" value="" x="19.1135" y="14.0335" smashed="yes" rot="MR90">
 <attribute name="NAME" x="20.3835" y="11.684" size="0.635" layer="26" font="vector" ratio="15" rot="MR90"/>
@@ -1671,6 +1680,27 @@ design rules under a new name.</description>
 <element name="V_DIV2" library="BiphasicBoard" package="R0603" value="1M" x="5.1435" y="16.383" smashed="yes">
 <attribute name="VALUE" x="3.7465" y="17.145" size="0.635" layer="27" font="vector" ratio="15" rot="R180"/>
 </element>
+=======
+</element>
+<element name="C1_SUPPLY" library="resistor" package="C0603" value="" x="19.1135" y="14.0335" smashed="yes" rot="MR90">
+<attribute name="NAME" x="20.3835" y="11.684" size="0.635" layer="26" font="vector" ratio="15" rot="MR90"/>
+<attribute name="VALUE" x="17.0815" y="13.1445" size="1.27" layer="28" rot="MR90"/>
+</element>
+<element name="LED6" library="SparkFun-LED" package="LED-1206" value="GREEN" x="26.543" y="3.4925" smashed="yes" rot="R270"/>
+<element name="R_LOAD_EX1" library="BiphasicBoard" package="R0603" value="10k" x="16.002" y="3.3655" smashed="yes" rot="MR180">
+<attribute name="VALUE" x="15.367" y="2.2225" size="0.635" layer="28" font="vector" ratio="15" rot="MR180"/>
+</element>
+<element name="R_LOAD_EX" library="BiphasicBoard" package="R0603" value="10k" x="5.588" y="15.9385" smashed="yes" rot="MR180">
+<attribute name="VALUE" x="3.4925" y="13.7795" size="0.635" layer="28" font="vector" ratio="15" rot="MR90"/>
+</element>
+<element name="V_DIV" library="BiphasicBoard" package="R0603" value="1M" x="8.1915" y="16.383" smashed="yes">
+<attribute name="VALUE" x="9.7155" y="16.51" size="0.635" layer="27" font="vector" ratio="15"/>
+</element>
+<element name="V_DIV2" library="BiphasicBoard" package="R0603" value="1M" x="5.1435" y="16.383" smashed="yes">
+<attribute name="VALUE" x="3.7465" y="17.145" size="0.635" layer="27" font="vector" ratio="15" rot="R180"/>
+</element>
+<element name="R_LED" library="BiphasicBoard" package="R0603" value="R_LED" x="24.1935" y="2.8575" rot="R90"/>
+>>>>>>> 59196ca3f06178552fc1e99e7d4526753634122a
 </elements>
 <signals>
 <signal name="N$1">
@@ -1845,9 +1875,7 @@ design rules under a new name.</description>
 <wire x1="17.018" y1="7.6835" x2="17.018" y2="7.747" width="0.3048" layer="1"/>
 <wire x1="20.5105" y1="1.651" x2="23.876" y2="1.651" width="0.3048" layer="16"/>
 <wire x1="23.876" y1="1.651" x2="23.876" y2="13.12" width="0.3048" layer="16"/>
-<contactref element="LED6" pad="C"/>
-<wire x1="25.2095" y1="2.437" x2="25.2095" y2="1.651" width="0.3048" layer="1"/>
-<wire x1="25.2095" y1="1.651" x2="20.5105" y2="1.651" width="0.3048" layer="1"/>
+<wire x1="22.6695" y1="1.651" x2="20.5105" y2="1.651" width="0.3048" layer="1"/>
 <wire x1="1.778" y1="1.27" x2="20.5105" y2="1.27" width="0.3048" layer="16"/>
 <wire x1="20.5105" y1="1.27" x2="20.5105" y2="1.651" width="0.3048" layer="16"/>
 <wire x1="7.4295" y1="1.54" x2="7.4295" y2="1.27" width="0.3048" layer="1"/>
@@ -1861,7 +1889,18 @@ design rules under a new name.</description>
 <wire x1="23.622" y1="13.081" x2="23.661" y2="13.12" width="0.3048" layer="1"/>
 <wire x1="23.661" y1="13.12" x2="25.8525" y2="13.12" width="0.3048" layer="1"/>
 <contactref element="V_DIV2" pad="1"/>
+<<<<<<< HEAD
 <via x="1.9685" y="16.9545" extent="1-16" drill="0.6" shape="square"/>
+=======
+<contactref element="R_LED" pad="2"/>
+<wire x1="24.1935" y1="3.7075" x2="22.6695" y2="3.7075" width="0.3048" layer="1"/>
+<wire x1="22.6695" y1="3.7075" x2="22.6695" y2="1.651" width="0.3048" layer="1"/>
+<wire x1="4.2935" y1="16.383" x2="4.2935" y2="16.891" width="0.3048" layer="1"/>
+<wire x1="4.2935" y1="16.891" x2="1.9685" y2="16.891" width="0.3048" layer="1"/>
+<via x="1.9685" y="16.891" extent="1-16" drill="0.6" shape="square"/>
+<wire x1="1.9685" y1="16.891" x2="1.9685" y2="17.018" width="0.3048" layer="16"/>
+<wire x1="1.9685" y1="17.018" x2="7.5565" y2="17.018" width="0.3048" layer="16"/>
+>>>>>>> 59196ca3f06178552fc1e99e7d4526753634122a
 <wire x1="18.5635" y1="7.6835" x2="18.4365" y2="7.7515" width="0" layer="19" extent="1-1"/>
 </signal>
 <signal name="TEST">
@@ -2008,7 +2047,7 @@ design rules under a new name.</description>
 <contactref element="TS3A4751_0" pad="2"/>
 <contactref element="TS3A4751_0" pad="3"/>
 <wire x1="6.5825" y1="12.1365" x2="6.5825" y2="11.4865" width="0.3048" layer="16"/>
-<contactref element="R_INPUT_FS3" pad="2"/>
+<contactref element="R_LOAD_EX" pad="2"/>
 <wire x1="5.422" y1="14.9225" x2="4.445" y2="14.9225" width="0.3048" layer="16"/>
 <wire x1="4.445" y1="14.9225" x2="4.445" y2="11.4865" width="0.3048" layer="16"/>
 <wire x1="4.445" y1="11.4865" x2="6.5825" y2="11.4865" width="0.3048" layer="16"/>
@@ -2047,7 +2086,7 @@ design rules under a new name.</description>
 <contactref element="TS3A4751_1" pad="2"/>
 <contactref element="TS3A4751_1" pad="3"/>
 <wire x1="18.4365" y1="5.1515" x2="18.4365" y2="4.5015" width="0.3048" layer="1"/>
-<contactref element="R_INPUT_FS2" pad="1"/>
+<contactref element="R_LOAD_EX1" pad="1"/>
 <wire x1="15.152" y1="3.3655" x2="15.4305" y2="3.39" width="0.3048" layer="16"/>
 <wire x1="15.4305" y1="3.39" x2="15.4305" y2="5.08" width="0.3048" layer="16"/>
 <via x="15.4305" y="5.08" extent="1-16" drill="0.6" shape="square"/>
@@ -2120,12 +2159,12 @@ design rules under a new name.</description>
 <via x="22.479" y="7.0245" extent="1-16" drill="0.6" shape="square"/>
 <wire x1="19.812" y1="10.6045" x2="22.479" y2="10.6045" width="0.3048" layer="16"/>
 <wire x1="22.479" y1="10.6045" x2="22.479" y2="7.0245" width="0.3048" layer="16"/>
-<wire x1="25.2095" y1="5.437" x2="23.622" y2="7.0245" width="0.3048" layer="1"/>
-<wire x1="23.622" y1="7.0245" x2="22.479" y2="7.0245" width="0.3048" layer="1"/>
+<wire x1="22.479" y1="7.0245" x2="24.511" y2="7.0245" width="0.3048" layer="1"/>
+<wire x1="24.511" y1="7.0245" x2="26.543" y2="4.9925" width="0.3048" layer="1"/>
 </signal>
 <signal name="N$3">
 <contactref element="OUT_CHS" pad="4"/>
-<contactref element="R_INPUT_FS2" pad="2"/>
+<contactref element="R_LOAD_EX1" pad="2"/>
 <wire x1="1.9685" y1="7.4295" x2="2.7305" y2="6.6675" width="0.3048" layer="16"/>
 <wire x1="2.7305" y1="6.6675" x2="10.16" y2="6.6675" width="0.3048" layer="16"/>
 <wire x1="10.16" y1="6.6675" x2="10.922" y2="5.9055" width="0.3048" layer="16"/>
@@ -2137,7 +2176,7 @@ design rules under a new name.</description>
 </signal>
 <signal name="N$4">
 <contactref element="OUT_CHS" pad="2"/>
-<contactref element="R_INPUT_FS3" pad="1"/>
+<contactref element="R_LOAD_EX" pad="1"/>
 <wire x1="3.937" y1="12.5095" x2="1.9685" y2="12.5095" width="0.3048" layer="16"/>
 <wire x1="4.738" y1="15.9385" x2="3.937" y2="15.1375" width="0.3048" layer="16"/>
 <wire x1="3.937" y1="15.1375" x2="3.937" y2="12.5095" width="0.3048" layer="16"/>
@@ -2166,6 +2205,15 @@ design rules under a new name.</description>
 <wire x1="7.3415" y1="16.383" x2="8.9401" y2="14.7844" width="0.3048" layer="1"/>
 <wire x1="8.9401" y1="14.7844" x2="12.5304" y2="14.7844" width="0.3048" layer="1"/>
 <wire x1="7.3415" y1="16.383" x2="5.9935" y2="16.383" width="0" layer="19" extent="1-1"/>
+<<<<<<< HEAD
+=======
+</signal>
+<signal name="N$9">
+<contactref element="LED6" pad="C"/>
+<contactref element="R_LED" pad="1"/>
+<wire x1="24.1935" y1="2.0075" x2="26.543" y2="2.0075" width="0.3048" layer="1"/>
+<wire x1="26.543" y1="2.0075" x2="26.543" y2="1.9925" width="0.3048" layer="1"/>
+>>>>>>> 59196ca3f06178552fc1e99e7d4526753634122a
 </signal>
 </signals>
 </board>
