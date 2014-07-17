@@ -113,11 +113,18 @@
 </layers>
 <board>
 <plain>
-<wire x1="0.023" y1="0.022" x2="25.514" y2="0.022" width="0" layer="20"/>
-<wire x1="25.514" y1="0.022" x2="25.514" y2="16.476" width="0" layer="20"/>
-<wire x1="25.514" y1="16.476" x2="0.023" y2="16.476" width="0" layer="20"/>
-<wire x1="0.023" y1="16.476" x2="0.023" y2="0.022" width="0" layer="20"/>
-<text x="18.325" y="12.316" size="1.016" layer="52" font="vector" ratio="16" rot="MR0">Biphasic</text>
+<wire x1="0.023" y1="15.841" x2="0.023" y2="0.657" width="0" layer="20"/>
+<wire x1="0.023" y1="0.657" x2="0.658" y2="0.022" width="0" layer="20" curve="90"/>
+<wire x1="0.658" y1="0.022" x2="24.879" y2="0.022" width="0" layer="20"/>
+<wire x1="24.879" y1="0.022" x2="25.514" y2="0.657" width="0" layer="20" curve="90"/>
+<wire x1="25.514" y1="0.657" x2="25.514" y2="15.841" width="0" layer="20"/>
+<wire x1="25.514" y1="15.841" x2="24.879" y2="16.476" width="0" layer="20" curve="90"/>
+<wire x1="24.879" y1="16.476" x2="0.658" y2="16.476" width="0" layer="20"/>
+<wire x1="0.658" y1="16.476" x2="0.023" y2="15.841" width="0" layer="20" curve="90"/>
+<text x="20.103" y="6.22" size="0.8128" layer="52" font="vector" ratio="13" rot="MR0">Biphasic Stim Generator
+Version 1.0
+(C) Tam Vu May 2014
+Kemere Lab</text>
 </plain>
 <libraries>
 <library name="BiphasicBoard">
@@ -744,4 +751,10 @@ design rules under a new name.</description>
 </signals>
 </board>
 </drawing>
+<compatibility>
+<note version="6.3" minversion="6.2.2" severity="warning">
+Since Version 6.2.2 text objects can contain more than one line,
+which will not be processed correctly with this version.
+</note>
+</compatibility>
 </eagle>
