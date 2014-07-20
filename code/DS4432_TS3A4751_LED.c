@@ -1,6 +1,8 @@
-//5/21/2014 DS4432 (DAC Current Source) and TS3A4751 (Switch Matrix) test 1
-//Kemere Lab, Rice University
+//Code to use with DBS PCB V1.2/V1.3
 //Boying Meng
+//July 2014
+//Kemere Lab, Rice University
+
 
 /* --COPYRIGHT--,BSD_EX
  * Copyright (c) 2012, Texas Instruments Incorporated
@@ -49,18 +51,23 @@
 
 #include <msp430.h>
 
-#define S0 BIT0	//use pin 2.0
 #define S1 BIT3
 #define S2 BIT2
 #define S3 BIT1
 #define S4 BIT4
 
+//LED
+#define PWM_cycle 200
+#define PWM_duty 1
+
 unsigned char *PTxData;                     // Pointer to TX data
 unsigned char TXByteCtr;
 unsigned char state=0;							// status variable
-unsigned int p1,p2;
+//unsigned int p1,p2;
 
-unsigned int V_Warning=586;
+unsigned int V_Warning=586;					// may need to adjust this value...
+
+unsigned int x=0;
 
 const unsigned char TxData[] =              // Table of data to transmit
 {
@@ -85,11 +92,9 @@ void ADC_Setup(void){	//ADC10 setup function
 }
 
 void PWM_TA1_Setup(void){
-	TA1CCR0 = 12000;				//pwm period
-	TA1CCTL1 = OUTMOD_3; 		//CCR1 set/reset
+	TA1CCR0 = PWM_cycle;				//pwm period
 	TA1CCTL2 = OUTMOD_7;		//CCR2 reset/set
-	TA1CCR1 = 12000;			//pwm duty cycle p2.2(red led(dark 0 ~ 128)bright);
-	TA1CCR2 = TA1CCR1;			//pwm duty cycle p2.4(blue led) brightness "opposite" of above
+	TA1CCR2 = PWM_duty;			//pwm duty cycle p2.5 brightness
 
 	TA1CTL = TASSEL_1 + MC_1;	//Use ACLK, up till CCR0;
 
@@ -117,7 +122,7 @@ int main(void)
 	UCB0CTL1 &= ~UCSWRST;                     // Clear SW reset, resume operation
 	IE2 |= UCB0TXIE;                          // Enable TX interrupt
 
-	//I2C send data
+	//I2C send data, OUT0
     PTxData = (unsigned char *)TxData;      // TX array start address
     TXByteCtr = sizeof TxData;              // Load TX byte counter
     while (UCB0CTL1 & UCTXSTP);             // Ensure stop condition got sent
@@ -126,7 +131,7 @@ int main(void)
                                             // Remain in LPM0 until all data
                                             // is TX'd
 
-	//I2C send data
+	//I2C send data, OUT1
     PTxData = (unsigned char *)TxData1;      // TX array start address
     TXByteCtr = sizeof TxData1;              // Load TX byte counter
     while (UCB0CTL1 & UCTXSTP);             // Ensure stop condition got sent
@@ -134,11 +139,6 @@ int main(void)
     __bis_SR_register(CPUOFF + GIE);        // Enter LPM0 w/ interrupts
                                              //Remain in LPM0 until all data
                                              //is TX'd
-
-    //speed up cpu??
-	//BCSCTL1 = CALBC1_8MHZ; 					// Set range
-	//DCOCTL = CALDCO_8MHZ;  					// Set DCO step + modulation
-
 
     //switch pin setup
     P2DIR |= BIT1 + BIT2 + BIT3 + BIT4;	 //set pins 2.1, 2.2, 2.3, and 2.4 as outputs
@@ -158,16 +158,13 @@ int main(void)
     //PWM_Setup
     PWM_TA1_Setup();
 
-
     // main timer interrupt setup
   	CCTL0 = CCIE;				//Puts the timer control on CCR0
   	CCR0 = 5000;				//first interrupt period
   	TACTL = TASSEL_2 + MC_2 + ID_3;	//Use SMCLK to interrupt (because VLO wouldn't meet timing requirement of 60us)
 
-	__enable_interrupt();		//global interrupt enable
-    __bis_SR_register(LPM1+GIE);        // Enter LPM0 w/ interrupts
-
-    //while(1);
+	__enable_interrupt();				//global interrupt enable
+    __bis_SR_register(LPM1+GIE);        // Enter LPM1 w/ interrupts
 
 }
 
@@ -177,35 +174,28 @@ __interrupt void Timer_A(void){		//
 	case 0:
 		P2OUT=S1+S4;					//Step0: turn on S1 and S4
 		P1OUT=S1+S4;
-		//P2OUT|=S0;						//Step1: turn on S0
 		CCR0+=60;						//increment CCR0
 		state=1;						//flip the state
 		break;
 	case 1:
-		//P2OUT&=~S0;						//Step2: turn off S0
-		//__delay_cycles(20);
-		P2OUT=S2+S3;					//Step3: turn off S1&S4, turn on S2&S3
-		//P1OUT|=S2+S3;
+		P2OUT=S2+S3;					//Step1: turn off S1&S4, turn on S2&S3
 		P1OUT=S2+S3;
-		//__delay_cycles(20);
-		//P2OUT|=S0;						//Step4: turn on S0
 		CCR0+=60;
 		state=2;
 		break;
 	case 2:
-		//P2OUT&=~S0;						//Step5: turn off S0
-		//P2OUT=S2+S4;
-		P2OUT=S2+S4;
-		//P2OUT=0;
+		P2OUT=S2+S4;					//short both ends to gnd
 		P1OUT=S2+S4;
-		//P1OUT=0;
 		CCR0+=9880;
 		state=0;
 
 		//sample Vcc voltage
-		P1OUT|=BIT5;					//raise pin1.5 to Vcc
-		p1=P1OUT;
-		ADC10CTL0 |= ENC + ADC10SC;		//enable ADC and take a sample and go into ADC interrupt
+		x++;
+		if (x==10000) {					//sampling rate ~ 100s?
+			x=0;							//reset x;
+			P1OUT|=BIT5;					//raise pin1.5 to Vcc
+			ADC10CTL0 |= ENC + ADC10SC;		//enable ADC and take a sample and go into ADC interrupt
+		}
 		break;
 	default:
 		break;
@@ -218,7 +208,11 @@ __interrupt void ADC10_ISR(void){	//
 	unsigned int DutyCycle=0;		//a variable for fast calculations
 	DutyCycle=ADC10MEM;
 	if (DutyCycle<V_Warning){
-		TA1CCR2 = 12000>>1;
+		TA1CCR0 = 24000;
+		TA1CCR2 = 2;
+	} else {	// in case
+		TA1CCR0 = PWM_cycle;
+		TA1CCR2 = PWM_duty;
 	}
 	P1OUT&=~BIT5;					//set pin1.5 back to gnd
 	ADC10CTL0 &= ~ENC;		//turn ADC temporarily off
