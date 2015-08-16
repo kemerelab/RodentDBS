@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE eagle SYSTEM "eagle.dtd">
-<eagle version="6.5.0">
+<eagle version="7.3.0">
 <drawing>
 <settings>
 <setting alwaysvectorfont="no"/>
@@ -6721,7 +6721,7 @@ Standard 5-pin 0.1" header. Use with straight break away headers (SKU : PRT-0011
 <part name="DS4432U+" library="BiphasicBoard" deviceset="DS4432U+" device=""/>
 <part name="MSP430" library="BiphasicBoard" deviceset="MSP430" device=""/>
 <part name="TS3A4751_0" library="BiphasicBoard" deviceset="TS3A4751" device=""/>
-<part name="C1_SUPPLY" library="resistor" deviceset="C-US" device="C0603"/>
+<part name="C1_SUPPLY" library="resistor" deviceset="C-US" device="C0603" value="10uF"/>
 <part name="LED6" library="SparkFun-LED" deviceset="LED" device="1206" value="GREEN"/>
 <part name="R_LOAD_EX" library="BiphasicBoard" deviceset="R-US_" device="R0603" value="10k"/>
 <part name="R_LED" library="BiphasicBoard" deviceset="R-US_" device="R0603" value="R_LED"/>
