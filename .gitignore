@@ -1,0 +1,7 @@
+# Ignore list for project root
+
+# dropbox annoyance
+.DS_Store
+
+# vim tmp files
+.swp
