@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/com.android.support/appcompat-v7/22.2.1/22.2.1.iml" filepath="$PROJECT_DIR$/com.android.support/appcompat-v7/22.2.1/22.2.1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/RSMControl.iml" filepath="$PROJECT_DIR$/RSMControl.iml" />
+      <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/com.android.support/appcompat-v7/appcompat-v7.iml" filepath="$PROJECT_DIR$/com.android.support/appcompat-v7/appcompat-v7.iml" />
+      <module fileurl="file://$PROJECT_DIR$/com.android.support/com.android.support.iml" filepath="$PROJECT_DIR$/com.android.support/com.android.support.iml" />
+      <module fileurl="file://$PROJECT_DIR$/ndeftools/ndeftools.iml" filepath="$PROJECT_DIR$/ndeftools/ndeftools.iml" />
+      <module fileurl="file://$PROJECT_DIR$/ndeftoolsutil/ndeftoolsutil.iml" filepath="$PROJECT_DIR$/ndeftoolsutil/ndeftoolsutil.iml" />
+    </modules>
+  </component>
+</project>

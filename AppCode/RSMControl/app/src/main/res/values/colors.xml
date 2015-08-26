@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="LightRed">#FFFF6464</color>
+    <color name="BackgroundLightRed">#47ffb3b3</color>
+    <color name="BackgroundLightGray">#477b7b7b</color>
+    <color name="LightGreen">#64ff64</color>
+    <color name="LightBlue">#3b9eff</color>
+    <color name="DarkBlue">#2a66a9</color>
+    <color name="Brown">#795548</color>
+    <color name="DarkerBrown">#4E342E</color>
+    <color name="LighterBrown">#D7CCC8</color>
+</resources>
