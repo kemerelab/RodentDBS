@@ -6,7 +6,7 @@
 <setting alwaysvectorfont="no"/>
 <setting verticaltext="up"/>
 </settings>
-<grid distance="0.1" unitdist="inch" unit="inch" style="lines" multiple="1" display="yes" altdistance="0.05" altunitdist="inch" altunit="inch"/>
+<grid distance="0.1" unitdist="inch" unit="inch" style="lines" multiple="1" display="no" altdistance="0.01" altunitdist="inch" altunit="inch"/>
 <layers>
 <layer number="1" name="Top" color="4" fill="1" visible="no" active="no"/>
 <layer number="2" name="Route2" color="1" fill="3" visible="no" active="no"/>
@@ -6681,7 +6681,6 @@ by exp-lbrs.ulp</description>
 <part name="VDD10" library="supply1" deviceset="VDD" device=""/>
 <part name="ANT" library="Samtec50Mil" deviceset="FTSH-102" device=""/>
 <part name="CANT" library="rcl" deviceset="C-EU" device="C0603"/>
-<part name="GND11" library="supply1" deviceset="GND" device=""/>
 <part name="C1" library="rcl" deviceset="C-EU" device="C0603" value="1µ"/>
 </parts>
 <sheets>
@@ -6728,7 +6727,6 @@ by exp-lbrs.ulp</description>
 <instance part="VDD10" gate="G$1" x="-45.72" y="127"/>
 <instance part="ANT" gate="G$1" x="-195.58" y="101.6"/>
 <instance part="CANT" gate="G$1" x="-177.8" y="99.06" rot="R180"/>
-<instance part="GND11" gate="1" x="-7.62" y="12.7"/>
 <instance part="C1" gate="G$1" x="-152.4" y="132.08" rot="R90"/>
 </instances>
 <busses>
@@ -6844,7 +6842,16 @@ by exp-lbrs.ulp</description>
 <pinref part="GND5" gate="1" pin="GND"/>
 <pinref part="TS3A4751_0" gate="G$1" pin="GND"/>
 <wire x1="-45.72" y1="20.32" x2="-45.72" y2="17.78" width="0.1524" layer="91"/>
-<wire x1="-40.64" y1="20.32" x2="-45.72" y2="20.32" width="0.1524" layer="91"/>
+<wire x1="-40.64" y1="20.32" x2="-43.18" y2="20.32" width="0.1524" layer="91"/>
+<pinref part="TS3A4751_0" gate="G$1" pin="COM1"/>
+<wire x1="-43.18" y1="20.32" x2="-45.72" y2="20.32" width="0.1524" layer="91"/>
+<wire x1="-40.64" y1="33.02" x2="-43.18" y2="33.02" width="0.1524" layer="91"/>
+<pinref part="TS3A4751_0" gate="G$1" pin="COM2"/>
+<wire x1="-40.64" y1="27.94" x2="-43.18" y2="27.94" width="0.1524" layer="91"/>
+<wire x1="-43.18" y1="33.02" x2="-43.18" y2="27.94" width="0.1524" layer="91"/>
+<wire x1="-43.18" y1="27.94" x2="-43.18" y2="20.32" width="0.1524" layer="91"/>
+<junction x="-43.18" y="27.94"/>
+<junction x="-43.18" y="20.32"/>
 </segment>
 <segment>
 <wire x1="53.34" y1="53.34" x2="53.34" y2="50.8" width="0.1524" layer="91"/>
@@ -6926,16 +6933,6 @@ by exp-lbrs.ulp</description>
 <wire x1="-38.1" y1="116.84" x2="-45.72" y2="116.84" width="0.1524" layer="91"/>
 <wire x1="-45.72" y1="116.84" x2="-45.72" y2="111.76" width="0.1524" layer="91"/>
 <pinref part="GND1" gate="1" pin="GND"/>
-</segment>
-<segment>
-<pinref part="TS3A4751_0" gate="G$1" pin="COM4"/>
-<wire x1="-10.16" y1="25.4" x2="-7.62" y2="25.4" width="0.1524" layer="91"/>
-<wire x1="-7.62" y1="25.4" x2="-7.62" y2="22.86" width="0.1524" layer="91"/>
-<pinref part="TS3A4751_0" gate="G$1" pin="COM3"/>
-<wire x1="-7.62" y1="22.86" x2="-10.16" y2="22.86" width="0.1524" layer="91"/>
-<wire x1="-7.62" y1="22.86" x2="-7.62" y2="15.24" width="0.1524" layer="91"/>
-<junction x="-7.62" y="22.86"/>
-<pinref part="GND11" gate="1" pin="GND"/>
 </segment>
 </net>
 <net name="TEST" class="0">
@@ -7021,11 +7018,13 @@ by exp-lbrs.ulp</description>
 </segment>
 <segment>
 <pinref part="TS3A4751_0" gate="G$1" pin="NO2"/>
-<wire x1="-40.64" y1="33.02" x2="-40.64" y2="30.48" width="0.1524" layer="91"/>
-<pinref part="TS3A4751_0" gate="G$1" pin="COM1"/>
 <wire x1="-40.64" y1="30.48" x2="-53.34" y2="30.48" width="0.1524" layer="91"/>
-<junction x="-40.64" y="30.48"/>
 <label x="-60.96" y="30.48" size="1.778" layer="95"/>
+</segment>
+<segment>
+<pinref part="TS3A4751_0" gate="G$1" pin="COM4"/>
+<wire x1="-10.16" y1="25.4" x2="7.62" y2="25.4" width="0.1524" layer="91"/>
+<label x="2.54" y="25.4" size="1.778" layer="95"/>
 </segment>
 </net>
 <net name="IN2" class="0">
@@ -7087,14 +7086,14 @@ by exp-lbrs.ulp</description>
 <label x="-53.34" y="7.62" size="1.778" layer="95"/>
 </segment>
 <segment>
-<wire x1="-43.18" y1="35.56" x2="-40.64" y2="35.56" width="0.1524" layer="91"/>
 <pinref part="TS3A4751_0" gate="G$1" pin="NO1"/>
-<pinref part="TS3A4751_0" gate="G$1" pin="COM2"/>
-<wire x1="-40.64" y1="27.94" x2="-43.18" y2="27.94" width="0.1524" layer="91"/>
-<wire x1="-43.18" y1="27.94" x2="-43.18" y2="35.56" width="0.1524" layer="91"/>
-<wire x1="-43.18" y1="35.56" x2="-53.34" y2="35.56" width="0.1524" layer="91"/>
-<junction x="-43.18" y="35.56"/>
+<wire x1="-40.64" y1="35.56" x2="-53.34" y2="35.56" width="0.1524" layer="91"/>
 <label x="-60.96" y="35.56" size="1.778" layer="95"/>
+</segment>
+<segment>
+<pinref part="TS3A4751_0" gate="G$1" pin="COM3"/>
+<wire x1="-10.16" y1="22.86" x2="7.62" y2="22.86" width="0.1524" layer="91"/>
+<label x="2.54" y="22.86" size="1.778" layer="95"/>
 </segment>
 </net>
 <net name="N$2" class="0">
@@ -7128,6 +7127,24 @@ by exp-lbrs.ulp</description>
 <pinref part="R_LED" gate="G$1" pin="2"/>
 <pinref part="LED6" gate="G$1" pin="A"/>
 <wire x1="35.56" y1="53.34" x2="40.64" y2="53.34" width="0.1524" layer="91"/>
+</segment>
+</net>
+<net name="N$3" class="0">
+<segment>
+<pinref part="U$1" gate="G$1" pin="INTO"/>
+<wire x1="-134.62" y1="78.74" x2="-132.08" y2="78.74" width="0.1524" layer="91"/>
+<wire x1="-132.08" y1="78.74" x2="-132.08" y2="63.5" width="0.1524" layer="91"/>
+<wire x1="-132.08" y1="63.5" x2="-43.18" y2="63.5" width="0.1524" layer="91"/>
+<pinref part="MSP430" gate="G$1" pin="8"/>
+</segment>
+</net>
+<net name="N$7" class="0">
+<segment>
+<pinref part="U$1" gate="G$1" pin="_RST"/>
+<wire x1="-167.64" y1="93.98" x2="-180.34" y2="93.98" width="0.1524" layer="91"/>
+<wire x1="-180.34" y1="93.98" x2="-180.34" y2="58.42" width="0.1524" layer="91"/>
+<wire x1="-180.34" y1="58.42" x2="-43.18" y2="58.42" width="0.1524" layer="91"/>
+<pinref part="MSP430" gate="G$1" pin="10"/>
 </segment>
 </net>
 </nets>
