@@ -35,29 +35,35 @@
  *
  *                       Rodent Stimulation Module (RSM) Firmware
  *
- * Firmware.h
+ * Battery Status Code
  *
- *  Constants and constant strings for firmware
+ * This file contains the code required to use the internal voltage references
+ * to measure the battery voltage
  *
- */
+ * Resources:
+ *  - Uses watchdog timer for general program state control
+ *  - Uses Timer A0 for stimulation pulse timing
+ *  - Uses PWM/Timer A1 module for display light (and Pin 2.5)
+ *  - Uses Pins 1.0-1.3 for control of switch array
+ *  - Uses Pins 1.6, 1.7 / USCI_A0 for I2C ()
+ *
+*/
 
-#ifndef FIRMWARE_H_
-#define FIRMWARE_H_
+#ifndef BATTERYSTATUS_H_
+#define BATTERYSTATUS_H_
 
-//LED
-#define PWM_cycle 200
-#define PWM_duty 100
+#include <msp430.h>
+#include "Firmware.h"
 
-/* Stimulation parameters *
- *  - These are accessed in the stimulation code, but set in the communcation code
- */
-extern int StimulationPhase;
-extern int PulseWidth;
-extern int InterPulseInterval;
-extern int Period;
-extern int Amplitude;
-extern int StimParameterMutex;
+extern int BatteryVoltage;
+extern long int BatteryStatusTickCounter;
 
+typedef enum {ASLEEP, STARTING_REF, SAMPLING} batteryStatusStateEnum;
+extern batteryStatusStateEnum BatteryStatusState;
 
+void BatteryStatusSetup(void);	// Setup ADC10 and initialize values
 
-#endif /* FIRMWARE_H_ */
+void ExecuteBatteryStatus(void);
+
+#endif
+

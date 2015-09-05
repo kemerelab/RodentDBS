@@ -40,22 +40,38 @@
  * stimulation), and additionally performs other monitoring and communication
  * functionality.
  *
+ * Resources:
+ *  - Uses watchdog timer for general program state control
+ *  - Uses Timer A0 for stimulation pulse timing
+ *  - Uses PWM/Timer A1 module for display light (and Pin 2.5)
+ *  - Uses Pins 1.0-1.3 for control of switch array
+ *  - Uses Pins 1.6, 1.7 for I2C ()
+ *
 */
 
 #include <msp430.h>
 #include "Firmware.h"
+#include "BatteryStatus.h"
+#include "SwitchMatrix.h"
+#include "I2C.h"
 
+/* Program coordination variables */
+unsigned char ProgramState=0;							// status variable
+long int Uptime = 0;
+long int LastUpdate = 0;
+long int LastChange = 0;
 
+/* Stimulation parameters *
+ *  - These are accessed in the stimulation code, but set in the communcation code
+ */
+int StimulationPhase;
+int PulseWidth;
+int InterPulseInterval;
+int Period;
+int Amplitude;
+int StimParameterMutex;
 
-void ADC_Setup(void){	//ADC10 setup function
-	ADC10CTL0 = SREF_1 + ADC10SHT_3 + REFON + ADC10ON + ADC10IE + REF2_5V;
-	ADC10CTL1 = INCH_0 + ADC10DIV_0;// + ADC10SSEL0;
-
-	ADC10AE0 = BIT0;
-
-	P1DIR &=~BIT0;				//P1.0 as input
-	P1SEL |= BIT0;				//P1.0 as input
-}
+unsigned int x=0;
 
 void PWM_TA1_Setup(void){
 	TA1CCR0 = PWM_cycle;				//pwm period
@@ -70,64 +86,23 @@ void PWM_TA1_Setup(void){
 
 int main(void)
 {
-	//timer setup
+	// Set up system clocks
 	BCSCTL1 = CALBC1_8MHZ; 					// Set range
 	DCOCTL = CALDCO_8MHZ;  					// Set DCO step + modulation
-	BCSCTL3 |= LFXT1S_2;                      // LFXT1 = VLO
+	BCSCTL3 |= LFXT1S_2;                     // LFXT1 = VLO
 
-	//I2C setup
-	WDTCTL = WDTPW + WDTHOLD;                 // Stop WDT
-	P1SEL |= BIT6 + BIT7;                     // Assign I2C pins to USCI_B0
-	P1SEL2|= BIT6 + BIT7;                     // Assign I2C pins to USCI_B0
-	UCB0CTL1 |= UCSWRST;                      // Enable SW reset
-	UCB0CTL0 = UCMST + UCMODE_3 + UCSYNC;     // I2C Master, synchronous mode
-	UCB0CTL1 = UCSSEL_2 + UCSWRST;            // Use SMCLK, keep SW reset
-	UCB0BR0 = 20;                             	// fSCL = SMCLK/20 = ~400kHz
-	UCB0BR1 = 0;
-	UCB0I2CSA = 0x48;                         // Slave Address is 048h
-	UCB0CTL1 &= ~UCSWRST;                     // Clear SW reset, resume operation
-	IE2 |= UCB0TXIE;                          // Enable TX interrupt
+	// Default - initialize all ports to output
+	P1DIR = 0xFF; P2DIR = 0xFF;	P3DIR = 0xFF;
+	P1OUT = 0; P2OUT = 0; P3OUT = 0;
 
-	//I2C send data, OUT0
-    PTxData = (unsigned char *)TxData;      // TX array start address
-    TXByteCtr = sizeof TxData;              // Load TX byte counter
-    while (UCB0CTL1 & UCTXSTP);             // Ensure stop condition got sent
-    UCB0CTL1 |= UCTR + UCTXSTT;             // I2C TX, start condition
-    __bis_SR_register(CPUOFF + GIE);        // Enter LPM0 w/ interrupts
-                                            // Remain in LPM0 until all data
-                                            // is TX'd
+	I2CSetup();
 
-	//I2C send data, OUT1
-    PTxData = (unsigned char *)TxData1;      // TX array start address
-    TXByteCtr = sizeof TxData1;              // Load TX byte counter
-    while (UCB0CTL1 & UCTXSTP);             // Ensure stop condition got sent
-    UCB0CTL1 |= UCTR + UCTXSTT;             // I2C TX, start condition
-    __bis_SR_register(CPUOFF + GIE);        // Enter LPM0 w/ interrupts
-                                             //Remain in LPM0 until all data
-                                             //is TX'd
+	BatteryStatusSetup();
 
-    //switch pin setup
-    P2DIR |= BIT1 + BIT2 + BIT3 + BIT4;	 //set pins 2.1, 2.2, 2.3, and 2.4 as outputs
-    P2OUT &= ~(BIT4 + BIT1 + BIT2 + BIT3);	//initializes outputs of pins 2.1, 2.2, 2.3, and 2.4 as 0 (all open switches)
-
-    //switch pin setup
-    P1DIR |= BIT1 + BIT2 + BIT3 + BIT4;	 //set pins 1.1, 1.2, 1.3, and 1.4 as outputs
-    P1OUT &= ~(BIT4 + BIT1 + BIT2 + BIT3);	//initializes outputs of pins 1.1, 1.2, 1.3, and 1.4 as 0 (all open switches)
-
-    //ADC Setup
-    ADC_Setup();
-
-    //Vcc Measurement Aid
-    P1DIR |= BIT5;		//set pin1.5 as output
-    P1OUT &= ~BIT5;		//initially pin1.5 is low(gnd)
+	SetupSwitchMatrix();
 
     //PWM_Setup
     PWM_TA1_Setup();
-
-    // main timer interrupt setup
-  	CCTL0 = CCIE;				//Puts the timer control on CCR0
-  	CCR0 = 5000;				//first interrupt period
-  	TACTL = TASSEL_2 + MC_2 + ID_3;	//Use SMCLK to interrupt (because VLO wouldn't meet timing requirement of 60us)
 
 	__enable_interrupt();				//global interrupt enable
     __bis_SR_register(LPM1+GIE);        // Enter LPM1 w/ interrupts
@@ -136,71 +111,28 @@ int main(void)
 
 #pragma vector = TIMER0_A0_VECTOR	//says that the interrupt that follows will use the "TIMER0_A0_VECTOR" interrupt
 __interrupt void Timer_A(void){		//
-	switch(state) {
-	case 0:
-		P2OUT=S1+S4;					//Step0: turn on S1 and S4
-		P1OUT=S1+S4;
-		CCR0+=60;						//increment CCR0
-		state=1;						//flip the state
+	switch(NextStimulationState) {
+	case FORWARD:
+		SetSwitchesForward();
+		CCR0+=PulseWidth;						//increment CCR0
 		break;
-	case 1:
-		P2OUT=S2+S3;					//Step1: turn off S1&S4, turn on S2&S3
-		P1OUT=S2+S3;
-		CCR0+=60;
-		state=2;
+	case REVERSE:
+		SetSwitchesReverse();
+		CCR0+=PulseWidth;
 		break;
-	case 2:
-		P2OUT=S2+S4;					//short both ends to gnd
-		P1OUT=S2+S4;
-		CCR0+=9880;
-		state=0;
-
-		//sample Vcc voltage
-		x++;
-		if (x==10000) {					//sampling rate ~ 100s?
-			x=0;							//reset x;
-			P1OUT|=BIT5;					//raise pin1.5 to Vcc
-			ADC10CTL0 |= ENC + ADC10SC;		//enable ADC and take a sample and go into ADC interrupt
+	case GROUNDED:
+		SetSwitchesGround();
+		if (disableStimulationFlag) {
+			NextStimulationState = OFF;
+			TA0CCTL0 = ~CCIE;
 		}
+		else
+			CCR0+=InterPulseInterval - (PulseWidth + PulseWidth);
 		break;
-	default:
+	case OFF:
+	default: // should never reach here
+		SetSwitchesGround();
+		TA0CCTL0 = ~CCIE;
 		break;
 	}
-	//p2=P2OUT;						//see status of P2OUT...
-}
-
-#pragma vector = ADC10_VECTOR		//says that the interrupt that follows will use the "ADC10_VECTOR" interrupt
-__interrupt void ADC10_ISR(void){	//
-	unsigned int DutyCycle=0;		//a variable for fast calculations
-	DutyCycle=ADC10MEM;
-	if (DutyCycle<V_Warning){
-		TA1CCR0 = 24000;
-		TA1CCR2 = 2;
-	} else {	// in case
-		TA1CCR0 = PWM_cycle;
-		TA1CCR2 = PWM_duty;
-	}
-	P1OUT&=~BIT5;					//set pin1.5 back to gnd
-	ADC10CTL0 &= ~ENC;		//turn ADC temporarily off
-}
-
-//------------------------------------------------------------------------------
-// The USCIAB0TX_ISR is structured such that it can be used to transmit any
-// number of bytes by pre-loading TXByteCtr with the byte count. Also, TXData
-// points to the next byte to transmit.
-//------------------------------------------------------------------------------
-#pragma vector = USCIAB0TX_VECTOR
-__interrupt void USCIAB0TX_ISR(void)
-{
-  if (TXByteCtr)                            // Check TX byte counter
-  {
-    UCB0TXBUF = *PTxData++;                 // Load TX buffer
-    TXByteCtr--;                            // Decrement TX byte counter
-  }
-  else
-  {
-    UCB0CTL1 |= UCTXSTP;                    // I2C stop condition
-    IFG2 &= ~UCB0TXIFG;                     // Clear USCI_B0 TX int flag
-    __bic_SR_register_on_exit(CPUOFF);      // Exit LPM0
-  }
 }

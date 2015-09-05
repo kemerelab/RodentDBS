@@ -35,29 +35,40 @@
  *
  *                       Rodent Stimulation Module (RSM) Firmware
  *
- * Firmware.h
+ * This file contains the code which controls the switch matrix that creates the
+ * biphasic current pulse.
  *
- *  Constants and constant strings for firmware
+ *   Input Current --------  S3 \----------/ S1 ----|
+ *                     |              |             |
+ *                     |              V             |
+ *                     |            BRAIN           |
+ *                     |              ^             |
+ *                     |              |             |
+ *                     |---  S4 \-----|----/ S2 ----|------ GND
  *
- */
+*/
+#ifndef SWITCHMATRIX_H_
+#define SWITCHMATRIX_H_
 
-#ifndef FIRMWARE_H_
-#define FIRMWARE_H_
+#include <msp430.h>
+#include "Firmware.h"
+#include "BatteryStatus.h"
 
-//LED
-#define PWM_cycle 200
-#define PWM_duty 100
+typedef enum {FORWARD, REVERSE, GROUNDED, OFF} stimulationStateEnum;
+extern stimulationStateEnum NextStimulationState;
 
-/* Stimulation parameters *
- *  - These are accessed in the stimulation code, but set in the communcation code
- */
-extern int StimulationPhase;
-extern int PulseWidth;
-extern int InterPulseInterval;
-extern int Period;
-extern int Amplitude;
-extern int StimParameterMutex;
+extern int disableStimulationFlag;
 
+#define S1 BIT4
+#define S2 BIT3
+#define S3 BIT1
+#define S4 BIT4
 
+inline void SetupSwitchMatrix(void);
+inline void EnableStimulation(void);
+inline void SetSwitchesOff(void);
+inline void SetSwitchesForward(void);
+inline void SetSwitchesReverse(void);
+inline void SetSwitchesGround(void);
 
-#endif /* FIRMWARE_H_ */
+#endif

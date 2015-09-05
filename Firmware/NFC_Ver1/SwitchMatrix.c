@@ -35,29 +35,63 @@
  *
  *                       Rodent Stimulation Module (RSM) Firmware
  *
- * Firmware.h
+ * This file contains the code which controls the switch matrix that creates the
+ * biphasic current pulse.
  *
- *  Constants and constant strings for firmware
+ *   Input Current --------  S3 \----------/ S1 ----|
+ *                     |              |             |
+ *                     |              V             |
+ *                     |            BRAIN           |
+ *                     |              ^             |
+ *                     |              |             |
+ *                     |---  S4 \-----|----/ S2 ----|------ GND
  *
- */
+*/
 
-#ifndef FIRMWARE_H_
-#define FIRMWARE_H_
+#include <msp430.h>
+#include "SwitchMatrix.h"
 
-//LED
-#define PWM_cycle 200
-#define PWM_duty 100
+stimulationStateEnum NextStimulationState = OFF;
+int disableStimulationFlag = 0;
 
-/* Stimulation parameters *
- *  - These are accessed in the stimulation code, but set in the communcation code
- */
-extern int StimulationPhase;
-extern int PulseWidth;
-extern int InterPulseInterval;
-extern int Period;
-extern int Amplitude;
-extern int StimParameterMutex;
+inline void SetupSwitchMatrix(void) {
+    //switch pin setup
+    P1DIR |= S1 + S2 + S3 + S4;	    //set pins 1.1, 1.2, 1.3, and 1.4 as outputs
+    SetSwitchesOff();
+    disableStimulationFlag = 0;
+}
 
+inline void EnableStimulation(void) {
+    // main timer interrupt setup
+    TA0CCTL0 = CCIE;	//Puts the timer control on CCR0
+    TA0CCR0 = InterPulseInterval;	//First interrupt period
+    TA0CTL = TASSEL_2 + MC_2 + ID_3;	//Use SMCLK to interrupt (because VLO wouldn't meet timing requirement of 60us)
+    NextStimulationState = FORWARD;
+}
 
+inline void DisableStimulation (void) {
+	disableStimulationFlag = 1;
+}
 
-#endif /* FIRMWARE_H_ */
+inline void SetSwitchesOff(void) {
+	P1OUT &= ~(S1 + S2 + S3 + S4);
+    NextStimulationState = OFF;
+}
+
+inline void SetSwitchesForward(void) {
+	P1OUT &= ~(S1 + S4);
+	P1OUT |= (S3 + S2);
+    NextStimulationState = REVERSE;
+}
+
+inline void SetSwitchesReverse(void) {
+	P1OUT &= ~(S3 + S2);
+	P1OUT |= ~(S1 + S4);
+    NextStimulationState = GROUNDED;
+}
+
+inline void SetSwitchesGround(void) {
+	P1OUT &= ~(S1 + S2 + S3 + S4);
+	P1OUT |= (S1 + S2);
+    NextStimulationState = FORWARD;
+}

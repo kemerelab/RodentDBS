@@ -35,29 +35,51 @@
  *
  *                       Rodent Stimulation Module (RSM) Firmware
  *
- * Firmware.h
+ * This file contains the I2C interface code and variables
  *
- *  Constants and constant strings for firmware
  *
- */
+*/
 
-#ifndef FIRMWARE_H_
-#define FIRMWARE_H_
+#ifndef I2C_H_
+#define I2C_H_
 
-//LED
-#define PWM_cycle 200
-#define PWM_duty 100
+#include <msp430.h>
+#include "I2C.h"
 
-/* Stimulation parameters *
- *  - These are accessed in the stimulation code, but set in the communcation code
- */
-extern int StimulationPhase;
-extern int PulseWidth;
-extern int InterPulseInterval;
-extern int Period;
-extern int Amplitude;
-extern int StimParameterMutex;
+#define DS4432_ADDRESS 0x48
+#define DS4432_CURRENT0_REG_ADDR 0xF8
+
+#define RF430CL330H_ADDRESS 0x28
 
 
+inline void I2CSetup (void);
 
-#endif /* FIRMWARE_H_ */
+inline void SetOutputCurrent (void);
+
+//writes a byte string to I2C slave_addr of length data_length
+void WriteContinuous_I2C(char slave_addr, unsigned char* write_data, unsigned int data_length);
+
+// Write a byte to a register with a 2 byte address
+void WriteRegister_WordAddress(char slave_addr,
+		unsigned char reg_addr1, unsigned char reg_addr2,
+		unsigned char reg_value);
+
+// Write a byte to a register with a 1 byte address
+void WriteRegister_ByteAddress(char slave_addr,
+		unsigned char reg_addr, unsigned char reg_value);
+
+// Read a byte from a register with a 2 byte address
+unsigned char ReadRegister_WordAddress(char slave_addr,
+		unsigned char reg_addr1, unsigned char reg_addr2);
+
+// Read a byte from a register with a 1 byte address
+unsigned char ReadRegister_ByteAddress(char slave_addr,
+		unsigned char reg_addr);
+
+// Read a series of bytes from a memory starting at a 2 byte address
+void ReadMemory_WordAddress(char slave_addr,
+		unsigned char reg_addr1, unsigned char reg_addr2,
+		unsigned char* data, int byte_count);
+
+#endif
+
