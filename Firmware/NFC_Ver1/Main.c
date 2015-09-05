@@ -54,6 +54,7 @@
 #include "BatteryStatus.h"
 #include "SwitchMatrix.h"
 #include "I2C.h"
+#include "NFCInterface.h"
 
 /* Program coordination variables */
 unsigned char ProgramState=0;							// status variable
@@ -73,6 +74,9 @@ int StimParameterMutex;
 
 unsigned int x=0;
 
+#define DS4432_ADDRESS 0x48
+#define DS4432_CURRENT0_REG_ADDR 0xF8
+
 void PWM_TA1_Setup(void){
 	TA1CCR0 = PWM_cycle;				//pwm period
 	TA1CCTL2 = OUTMOD_7;		//CCR2 reset/set
@@ -83,6 +87,14 @@ void PWM_TA1_Setup(void){
 	P2DIR |= BIT5;			//initialize P2.5
 	P2SEL |= BIT5;			//select P2.5 as PWM outputs
 }
+
+
+inline void SetOutputCurrent (void) {
+	// refer to global Amplitude variable!
+	WriteRegister_ByteAddress(DS4432_ADDRESS,DS4432_CURRENT0_REG_ADDR, 0xF1);
+}
+
+
 
 int main(void)
 {
@@ -103,6 +115,10 @@ int main(void)
 
     //PWM_Setup
     PWM_TA1_Setup();
+
+    NFCInterfaceSetup();
+
+    EnableStimulation();
 
 	__enable_interrupt();				//global interrupt enable
     __bis_SR_register(LPM1+GIE);        // Enter LPM1 w/ interrupts

@@ -41,6 +41,7 @@
 */
 
 #include <msp430.h>
+#include <stdint.h>
 #include "I2C.h"
 
 inline void I2CSetup (void)
@@ -54,14 +55,8 @@ inline void I2CSetup (void)
 	UCB0BR1 = 0;
 }
 
-inline void SetOutputCurrent (void) {
-	// refer to global Amplitude variable!
-	WriteRegister_ByteAddress(DS4432_ADDRESS,DS4432_CURRENT0_REG_ADDR, 0xF1);
-}
-
-
 //writes a byte string to I2C slave_addr of length data_length
-void WriteContinuous_I2C(char slave_addr, unsigned char* write_data, unsigned int data_length) {
+void WriteContinuous_I2C(char slave_addr, uint16_t memory_addr, unsigned char* write_data, unsigned int data_length) {
 	unsigned int i;
 	UCB0I2CSA = slave_addr;    // Slave Address
 	UCB0CTL1  &= ~UCSWRST;
@@ -69,6 +64,10 @@ void WriteContinuous_I2C(char slave_addr, unsigned char* write_data, unsigned in
 
 	UCB0TXBUF = write_data[0]; // Load the first byte of data
 	while(!(UCB0CTL1 & UCTXSTT)); // Assert that start condition was set
+	while(!(UC0IFG & UCB0TXIFG)); // Wait until data is sent
+	UCB0TXBUF = memory_addr >> 8; // Load the memory address (MSB) to be transmitted
+	while(!(UC0IFG & UCB0TXIFG)); // Wait until data is sent
+	UCB0TXBUF = memory_addr & 0xFF; // Load the memory address (LSB) to be transmitted
 	for(i = 0; i < data_length; i++)
 	{
 		while(!(UC0IFG & UCB0TXIFG)); // Wait until data is sent
@@ -82,17 +81,16 @@ void WriteContinuous_I2C(char slave_addr, unsigned char* write_data, unsigned in
 
 // Write a byte to a register with a 2 byte address
 void WriteRegister_WordAddress(char slave_addr,
-		unsigned char reg_addr1, unsigned char reg_addr2,
-		unsigned char reg_value)
+		uint16_t reg_addr, unsigned char reg_value)
 {
 	UCB0I2CSA = slave_addr;    // Slave Address
 	UCB0CTL1  &= ~UCSWRST;
 	UCB0CTL1 |= UCTXSTT + UCTR;		// Start i2c write operation
 
-	UCB0TXBUF = reg_addr1; // Load the first byte of i2c data
+	UCB0TXBUF = reg_addr >> 8; // Load the first (MSB) address byte to i2c data
 	while(!(UCB0CTL1 & UCTXSTT)); // Assert that start condition was started
     while(!(UC0IFG & UCB0TXIFG)); // Wait until data is sent
-	UCB0TXBUF = reg_addr2; // Load the next byte of data
+	UCB0TXBUF = reg_addr & 0xFF; // Load the second address byte
 	while(!(UC0IFG & UCB0TXIFG)); // Wait until data is sent
 	UCB0TXBUF = reg_value; // Load the next byte of data
 	while(!(UC0IFG & UCB0TXIFG)); // Wait until data is sent
@@ -120,8 +118,7 @@ void WriteRegister_ByteAddress(char slave_addr,
 }
 
 // Read a byte from a register with a 2 byte address
-unsigned char ReadRegister_WordAddress(char slave_addr,
-		unsigned char reg_addr1, unsigned char reg_addr2)
+unsigned char ReadRegister_WordAddress(char slave_addr, uint16_t reg_addr)
 {
 	unsigned char reg_value;
 
@@ -129,10 +126,10 @@ unsigned char ReadRegister_WordAddress(char slave_addr,
 	UCB0CTL1  &= ~UCSWRST;
 	UCB0CTL1 |= UCTXSTT + UCTR;		// Start i2c write operation
 
-	UCB0TXBUF = reg_addr1; // Load the first byte of i2c data
+	UCB0TXBUF = reg_addr >> 8; // Load the first address byte to i2c data
 	while(!(UCB0CTL1 & UCTXSTT)); // Assert that start condition was started
     while(!(UC0IFG & UCB0TXIFG)); // Wait until data is sent
-	UCB0TXBUF = reg_addr2; // Load the next byte of data
+	UCB0TXBUF = reg_addr & 0xFF; // Load the second address byte
 	while(!(UC0IFG & UCB0TXIFG)); // Wait until data is sent
 	UCB0CTL1 &= ~UCTR; // Change to read mode and...
 	UCB0CTL1 |= UCTXSTT;		// set repeated start
@@ -168,8 +165,7 @@ unsigned char ReadRegister_ByteAddress(char slave_addr,
 }
 
 // Read a series of bytes from a memory starting at a 2 byte address
-void ReadMemory_WordAddress(char slave_addr,
-		unsigned char reg_addr1, unsigned char reg_addr2,
+void ReadMemory_WordAddress(char slave_addr, uint16_t reg_addr,
 		unsigned char* data, int byte_count)
 {
 	unsigned int i;
@@ -178,10 +174,10 @@ void ReadMemory_WordAddress(char slave_addr,
 	UCB0CTL1  &= ~UCSWRST;
 	UCB0CTL1 |= UCTXSTT + UCTR;		// Start i2c write operation
 
-	UCB0TXBUF = reg_addr1; // Load the first byte of i2c data
+	UCB0TXBUF = reg_addr >> 8; // Load the first address byte
 	while(!(UCB0CTL1 & UCTXSTT)); // Assert that start condition was started
     while(!(UC0IFG & UCB0TXIFG)); // Wait until data is sent
-	UCB0TXBUF = reg_addr2; // Load the next byte of data
+	UCB0TXBUF = reg_addr & 0xFF; // Load the second address byte
 	while(!(UC0IFG & UCB0TXIFG)); // Wait until data is sent
 	UCB0CTL1 &= ~UCTR; // Change to read mode and...
 	UCB0CTL1 |= UCTXSTT;		// set repeated start

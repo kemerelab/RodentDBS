@@ -45,41 +45,28 @@
 
 #include <msp430.h>
 #include "I2C.h"
-
-#define DS4432_ADDRESS 0x48
-#define DS4432_CURRENT0_REG_ADDR 0xF8
-
-#define RF430CL330H_ADDRESS 0x28
+#include <stdint.h>
 
 
 inline void I2CSetup (void);
 
-inline void SetOutputCurrent (void);
-
 //writes a byte string to I2C slave_addr of length data_length
-void WriteContinuous_I2C(char slave_addr, unsigned char* write_data, unsigned int data_length);
+void WriteContinuous_I2C(char slave_addr, uint16_t memory_addr, unsigned char* write_data, unsigned int data_length);
 
 // Write a byte to a register with a 2 byte address
-void WriteRegister_WordAddress(char slave_addr,
-		unsigned char reg_addr1, unsigned char reg_addr2,
-		unsigned char reg_value);
+void WriteRegister_WordAddress(char slave_addr, uint16_t reg_addr, unsigned char reg_value);
 
 // Write a byte to a register with a 1 byte address
-void WriteRegister_ByteAddress(char slave_addr,
-		unsigned char reg_addr, unsigned char reg_value);
+void WriteRegister_ByteAddress(char slave_addr, unsigned char reg_addr, unsigned char reg_value);
 
 // Read a byte from a register with a 2 byte address
-unsigned char ReadRegister_WordAddress(char slave_addr,
-		unsigned char reg_addr1, unsigned char reg_addr2);
+unsigned char ReadRegister_WordAddress(char slave_addr, uint16_t reg_addr);
 
 // Read a byte from a register with a 1 byte address
-unsigned char ReadRegister_ByteAddress(char slave_addr,
-		unsigned char reg_addr);
+unsigned char ReadRegister_ByteAddress(char slave_addr, unsigned char reg_addr);
 
 // Read a series of bytes from a memory starting at a 2 byte address
-void ReadMemory_WordAddress(char slave_addr,
-		unsigned char reg_addr1, unsigned char reg_addr2,
-		unsigned char* data, int byte_count);
+void ReadMemory_WordAddress(char slave_addr, uint16_t reg_addr, unsigned char* data, int byte_count);
 
 #endif
 
