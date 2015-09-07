@@ -96,37 +96,50 @@ inline void SetOutputCurrent (void) {
 
 
 
-int main(void)
+void main(void)
 {
-	// Set up system clocks
-	BCSCTL1 = CALBC1_8MHZ; 					// Set range
-	DCOCTL = CALDCO_8MHZ;  					// Set DCO step + modulation
-	BCSCTL3 |= LFXT1S_2;                     // LFXT1 = VLO
+     unsigned short temp;
 
-	// Default - initialize all ports to output
-	P1DIR = 0xFF; P2DIR = 0xFF;	P3DIR = 0xFF;
-	P1OUT = 0; P2OUT = 0; P3OUT = 0;
+ 	WDTCTL = WDTPW + WDTHOLD;                 // Stop WDT
 
-	I2CSetup();
+    // Set up system clocks
+    BCSCTL1 = CALBC1_8MHZ; 					// Set range
+    DCOCTL = CALDCO_8MHZ;  					// Set DCO step + modulation
+    BCSCTL2 = DIVS_3;  // Setup SMCLK to be 1 MHz rather than 8
+    BCSCTL3 |= LFXT1S_2;                     // LFXT1 = VLO
 
-	BatteryStatusSetup();
+    // Default - initialize all ports to output
+    P1DIR = 0xFF; P2DIR = 0xFF;	P3DIR = 0xFF;
+    P1OUT = 0; P2OUT = 0; P3OUT = 0;
 
-	SetupSwitchMatrix();
+    I2CSetup();
+
+    //BatteryStatusSetup();
+
+    //SetupSwitchMatrix();
 
     //PWM_Setup
-    PWM_TA1_Setup();
+    //PWM_TA1_Setup();
 
     NFCInterfaceSetup();
 
-    EnableStimulation();
+    //EnableStimulation();
 
-	__enable_interrupt();				//global interrupt enable
-    __bis_SR_register(LPM1+GIE);        // Enter LPM1 w/ interrupts
+    __enable_interrupt();	        //global interrupt enable
 
+    __bis_SR_register(LPM1 | GIE);        // Enter LPM1 w/ interrupts
+    while(1);
 }
 
+#if defined(__TI_COMPILER_VERSION__) || defined(__IAR_SYSTEMS_ICC__)
 #pragma vector = TIMER0_A0_VECTOR	//says that the interrupt that follows will use the "TIMER0_A0_VECTOR" interrupt
-__interrupt void Timer_A(void){		//
+__interrupt void Timer_A(void)
+#elif defined(__GNUC__)
+void __attribute__ ((interrupt(TIMER0_A0_VECTOR))) Timer_A (void)
+#else
+#error Compiler not supported!
+#endif
+{
 	switch(NextStimulationState) {
 	case FORWARD:
 		SetSwitchesForward();

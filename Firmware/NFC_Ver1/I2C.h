@@ -54,7 +54,7 @@ inline void I2CSetup (void);
 void WriteContinuous_I2C(char slave_addr, uint16_t memory_addr, unsigned char* write_data, unsigned int data_length);
 
 // Write a byte to a register with a 2 byte address
-void WriteRegister_WordAddress(char slave_addr, uint16_t reg_addr, unsigned char reg_value);
+void WriteRegister_WordAddress(char slave_addr, uint16_t reg_addr, uint16_t reg_value);
 
 // Write a byte to a register with a 1 byte address
 void WriteRegister_ByteAddress(char slave_addr, unsigned char reg_addr, unsigned char reg_value);

@@ -76,8 +76,9 @@
 #define RF_BUSY    BIT2
 
 
-#define RF430_DEFAULT_DATA		{  														\
+#define RF430_DEFAULT_DATA		{            											\
 /*NDEF Tag Application Name*/ 															\
+0x00, 0x00, \
 0xD2, 0x76, 0x00, 0x00, 0x85, 0x01, 0x01, 												\
 																						\
 /*Capability Container ID*/ 															\
@@ -104,7 +105,7 @@
 0x65, 0x6E, /* 'e', 'n', */																\
 																						\
 /* 'Hello, world!' NDEF data; Empty NDEF message, length should match NLEN*/			\
-0x48, 0x65, 0x6C, 0x6C, 0x6f, 0x2c, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21  			\
+'h','i',' ','h','o','w',' ', 'a', 'r', 'e', ' ', 'y', 'o', 'u', '?'  			\
 }
 
 

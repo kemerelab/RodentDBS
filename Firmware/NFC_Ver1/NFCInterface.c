@@ -41,7 +41,7 @@
 */
 
 #include "NFCInterface.h"
-unsigned char NDEF_Application_Data[] = RF430_DEFAULT_DATA;
+const unsigned char NDEF_Application_Data[] = RF430_DEFAULT_DATA;
 
 void NFCInterfaceSetup(void) {
 	// Reset the RF430 using its reset pin. Normally on power up this wouldn't be necessary,
@@ -53,6 +53,7 @@ void NFCInterfaceSetup(void) {
 	__delay_cycles(1000); // Wait a bit
 	RF430_PORT_OUT |= RF430_RST; // Release the RF430 to on
 
+	__delay_cycles(100000);
     // Should set up interrupt here?
 
 	while(!(ReadRegister_WordAddress(RF430_ADDRESS, STATUS_REG) & READY)); //wait until READY bit has been set
@@ -66,19 +67,20 @@ void NFCInterfaceSetup(void) {
 		version = ReadRegister_WordAddress(RF430_ADDRESS, VERSION_REG);  // read the version register.  The fix changes based on what version of the
 											   // RF430 is being used.  Version C and D have the issue.  Next versions are
 											   // expected to have this issue corrected Ver C = 0x01, Ver D = 0x02
+
+
+
 		if (version == 0x01 || version == 0x02)
 		{	// the issue exists in these two versions
-			WriteRegister_WordAddress(RF430_ADDRESS, 0xFFE0, 0x4E); // Next byte should be 00 - is it?
-			WriteRegister_WordAddress(RF430_ADDRESS, 0xFFFE, 0x80); // Next byte should be 00 is it?
+			WriteRegister_WordAddress(RF430_ADDRESS, 0xFFE0, 0x004E);
+			WriteRegister_WordAddress(RF430_ADDRESS, 0xFFFE, 0x0080);
 			if (version == 0x01)
 			{  // Ver C
-				WriteRegister_WordAddress(RF430_ADDRESS, 0x2a98, 0x50);
-				WriteRegister_WordAddress(RF430_ADDRESS, 0x2a99, 0x06);
+				WriteRegister_WordAddress(RF430_ADDRESS, 0x2a98, 0x0650);
 			}
 			else
 			{	// Ver D
-				WriteRegister_WordAddress(RF430_ADDRESS, 0x2a6e, 0x50);
-				WriteRegister_WordAddress(RF430_ADDRESS, 0x2a6f, 0x06);
+				WriteRegister_WordAddress(RF430_ADDRESS, 0x2a6e, 0x0650);
 			}
 			WriteRegister_WordAddress(RF430_ADDRESS, 0x2814, 0);
 			WriteRegister_WordAddress(RF430_ADDRESS, 0x2815, 0); // Is this necessary?
@@ -88,7 +90,7 @@ void NFCInterfaceSetup(void) {
 	}
 
     //write NDEF memory with Capability Container + NDEF message
-    WriteContinuous_I2C(RF430_ADDRESS, 0, NDEF_Application_Data, 48);
+    WriteContinuous_I2C(RF430_ADDRESS, 0x0, NDEF_Application_Data, sizeof(NDEF_Application_Data));
     WriteRegister_WordAddress(RF430_ADDRESS, CONTROL_REG, RF_ENABLE);
 
 }
