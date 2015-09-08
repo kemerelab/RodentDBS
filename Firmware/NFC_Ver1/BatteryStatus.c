@@ -87,8 +87,9 @@ void ExecuteBatteryStatus(void) {
 	}
 }
 
-#pragma vector = ADC10_VECTOR		//says that the interrupt that follows will use the "ADC10_VECTOR" interrupt
-__interrupt void ADC10_ISR(void){	//
+#pragma vector=ADC10_VECTOR
+__interrupt void ADC10_ISR(void)
+{	//
 	ADC10CTL0 &= ~ENC;		//disable ADC
 	ADC10CTL0 &= ~(REFON + ADC10ON + ADC10IE); // and then shutdown completely
 	BatteryVoltage=ADC10MEM;

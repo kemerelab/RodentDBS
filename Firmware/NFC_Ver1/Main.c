@@ -98,14 +98,12 @@ inline void SetOutputCurrent (void) {
 
 void main(void)
 {
-     unsigned short temp;
 
  	WDTCTL = WDTPW + WDTHOLD;                 // Stop WDT
 
     // Set up system clocks
     BCSCTL1 = CALBC1_8MHZ; 					// Set range
     DCOCTL = CALDCO_8MHZ;  					// Set DCO step + modulation
-    BCSCTL2 = DIVS_3;  // Setup SMCLK to be 1 MHz rather than 8
     BCSCTL3 |= LFXT1S_2;                     // LFXT1 = VLO
 
     // Default - initialize all ports to output
@@ -127,18 +125,12 @@ void main(void)
 
     __enable_interrupt();	        //global interrupt enable
 
-    __bis_SR_register(LPM1 | GIE);        // Enter LPM1 w/ interrupts
+    __bis_SR_register(LPM1_bits | GIE);        // Enter LPM1 w/ interrupts
     while(1);
 }
 
-#if defined(__TI_COMPILER_VERSION__) || defined(__IAR_SYSTEMS_ICC__)
 #pragma vector = TIMER0_A0_VECTOR	//says that the interrupt that follows will use the "TIMER0_A0_VECTOR" interrupt
 __interrupt void Timer_A(void)
-#elif defined(__GNUC__)
-void __attribute__ ((interrupt(TIMER0_A0_VECTOR))) Timer_A (void)
-#else
-#error Compiler not supported!
-#endif
 {
 	switch(NextStimulationState) {
 	case FORWARD:
@@ -165,3 +157,4 @@ void __attribute__ ((interrupt(TIMER0_A0_VECTOR))) Timer_A (void)
 		break;
 	}
 }
+

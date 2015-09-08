@@ -90,7 +90,7 @@ void NFCInterfaceSetup(void) {
 	}
 
     //write NDEF memory with Capability Container + NDEF message
-    WriteContinuous_I2C(RF430_ADDRESS, 0x0, NDEF_Application_Data, sizeof(NDEF_Application_Data));
+    WriteContinuous_I2C(RF430_ADDRESS, NDEF_Application_Data, sizeof(NDEF_Application_Data));
     WriteRegister_WordAddress(RF430_ADDRESS, CONTROL_REG, RF_ENABLE);
 
 }
