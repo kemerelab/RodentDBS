@@ -176,13 +176,13 @@ __interrupt void Timer_A0_ISR(void)
 #pragma vector=TIMER1_A0_VECTOR
 __interrupt void Timer1_A0_ISR (void)
 {
-    static unsigned int SecondCounter = 500;
+    static unsigned int SecondCounter = 100;
 
     TA1CCR0 += 1000;        // 1 ms period
 
     if (--SecondCounter == 0) {
-        Uptime += 2;
-        SecondCounter = 500;
+        Uptime += 1;
+        SecondCounter = 100;
         if (ProgramState == 0) // If the master loop has gone to sleep then wake it up
             __bic_SR_register_on_exit(LPM1_bits);
     }
