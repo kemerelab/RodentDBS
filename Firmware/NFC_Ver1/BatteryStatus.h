@@ -53,7 +53,6 @@
 #define BATTERYSTATUS_H_
 
 #include <msp430.h>
-#include "Firmware.h"
 
 extern int BatteryVoltage;
 extern long int BatteryStatusTickCounter;
@@ -61,7 +60,7 @@ extern long int BatteryStatusTickCounter;
 typedef enum {ASLEEP, STARTING_REF, SAMPLING} batteryStatusStateEnum;
 extern batteryStatusStateEnum BatteryStatusState;
 
-void BatteryStatusSetup(void);	// Setup ADC10 and initialize values
+void BatteryStatusSetup(void);  // Setup ADC10 and initialize values
 
 void ExecuteBatteryStatus(void);
 

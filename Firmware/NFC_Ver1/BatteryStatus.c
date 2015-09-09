@@ -43,8 +43,8 @@
 */
 
 #include <msp430.h>
-#include "Firmware.h"
 #include "BatteryStatus.h"
+#include "Firmware.h"
 
 int BatteryVoltage;
 long int BatteryStatusTickCounter;
@@ -54,44 +54,44 @@ batteryStatusStateEnum BatteryStatusState;
 /*
  * Initialize the ADC10 to prepare to measure the battery voltage.
  */
-void BatteryStatusSetup(void){	//ADC10 setup function
-	BatteryVoltage = 0;
-	BatteryStatusState = ASLEEP;
-	BatteryStatusTickCounter = 0;
+void BatteryStatusSetup(void){  //ADC10 setup function
+    BatteryVoltage = 0;
+    BatteryStatusState = ASLEEP;
+    BatteryStatusTickCounter = 0;
 
-	ADC10CTL0 = SREF_1 + REF2_5V; // User Vref+ as positive rail and Vss as negative; Use 2.5 V Vref
-	ADC10CTL0 = ADC10CTL0 + ADC10SR; // Set low speed sampling to minimize reference buffer power
-	ADC10CTL0 = ADC10CTL0 + ADC10SHT_3; // Sample for longest period (64 clks)
-	ADC10CTL1 = INCH_11; // For data source, use internal voltage, (Vcc-Vss)/2
-	ADC10CTL1 = ADC10CTL1 + ADC10SSEL_3; // Use the master clock for the ADC (set as 8 MHz)
-	ADC10AE0 = BIT0;
+    ADC10CTL0 = SREF_1 + REF2_5V; // User Vref+ as positive rail and Vss as negative; Use 2.5 V Vref
+    ADC10CTL0 = ADC10CTL0 + ADC10SR; // Set low speed sampling to minimize reference buffer power
+    ADC10CTL0 = ADC10CTL0 + ADC10SHT_3; // Sample for longest period (64 clks)
+    ADC10CTL1 = INCH_11; // For data source, use internal voltage, (Vcc-Vss)/2
+    ADC10CTL1 = ADC10CTL1 + ADC10SSEL_3; // Use the master clock for the ADC (set as 8 MHz)
+    ADC10AE0 = BIT0;
 
 }
 
 void ExecuteBatteryStatus(void) {
-	switch (BatteryStatusState) {
-	case ASLEEP:
-		BatteryStatusState = STARTING_REF;
-		ADC10CTL0 = ADC10CTL0 | (REFON + ADC10ON + ADC10IE);
-		BatteryStatusTickCounter = 30; // Need to wait 30 us before next call to function
-		break;
-	case STARTING_REF:
-		BatteryStatusState = SAMPLING;
-		ADC10CTL0 |= ENC; // ADC10 enable set; this triggers sampling and will result in the ISR when data ready
-		BatteryStatusTickCounter = 200; // wait for this to have occured and then go abck asleep
-		break;
-	case SAMPLING:
-		BatteryStatusState = ASLEEP;
-		BatteryStatusTickCounter = 1000000; // wait for a second to sample next
-		break;
-	}
+    switch (BatteryStatusState) {
+    case ASLEEP:
+        BatteryStatusState = STARTING_REF;
+        ADC10CTL0 = ADC10CTL0 | (REFON + ADC10ON + ADC10IE);
+        BatteryStatusTickCounter = 30; // Need to wait 30 us before next call to function
+        break;
+    case STARTING_REF:
+        BatteryStatusState = SAMPLING;
+        ADC10CTL0 |= ENC; // ADC10 enable set; this triggers sampling and will result in the ISR when data ready
+        BatteryStatusTickCounter = 200; // wait for this to have occured and then go abck asleep
+        break;
+    case SAMPLING:
+        BatteryStatusState = ASLEEP;
+        BatteryStatusTickCounter = 1000000; // wait for a second to sample next
+        break;
+    }
 }
 
 #pragma vector=ADC10_VECTOR
 __interrupt void ADC10_ISR(void)
-{	//
-	ADC10CTL0 &= ~ENC;		//disable ADC
-	ADC10CTL0 &= ~(REFON + ADC10ON + ADC10IE); // and then shutdown completely
-	BatteryVoltage=ADC10MEM;
+{   //
+    ADC10CTL0 &= ~ENC;      //disable ADC
+    ADC10CTL0 &= ~(REFON + ADC10ON + ADC10IE); // and then shutdown completely
+    BatteryVoltage=ADC10MEM;
 }
 

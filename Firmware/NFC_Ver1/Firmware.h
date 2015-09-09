@@ -44,20 +44,26 @@
 #ifndef FIRMWARE_H_
 #define FIRMWARE_H_
 
+#include "stdint.h"
+
 //LED
 #define PWM_cycle 200
 #define PWM_duty 100
 
+/* Program coordination variables */
+extern volatile unsigned char ProgramState;                         // status variable
+extern volatile uint32_t Uptime;
+extern volatile uint32_t LastUpdate;
+extern volatile uint32_t LastChange;
+
 /* Stimulation parameters *
  *  - These are accessed in the stimulation code, but set in the communcation code
  */
-extern int StimulationPhase;
-extern int PulseWidth;
-extern int InterPulseInterval;
-extern int Period;
-extern int Amplitude;
-extern int StimParameterMutex;
-
-
+extern volatile uint16_t StimulationPhase;
+extern volatile uint16_t PulseWidth;
+extern volatile uint16_t InterPulseInterval;
+extern volatile uint16_t Period;
+extern volatile uint16_t Amplitude;
+extern volatile uint16_t StimParameterMutex;
 
 #endif /* FIRMWARE_H_ */

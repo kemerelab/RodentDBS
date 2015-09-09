@@ -41,57 +41,126 @@
 */
 
 #include "NFCInterface.h"
-const unsigned char NDEF_Application_Data[] = RF430_DEFAULT_DATA;
+#include "Firmware.h"
+#include "I2C.h"
+#include "stdint.h"
+
+struct I2C_NDEF_FullRecord NDEF_Data = { \
+        .MemoryAddress = {0x00, 0x00}, \
+        .ND.TagApplicationName={0xD2, 0x76, 0x00, 0x00, 0x85, 0x01, 0x01}, \
+        .ND.CapabilityFileID = {0xE1, 0x03}, \
+        .ND.CapContainer.Len = {0x00, 0x0F}, \
+        .ND.CapContainer.MappingVersion = 0x20, \
+        .ND.CapContainer.MLe = {0x00, 0xF9}, \
+        .ND.CapContainer.MLc = {0x00, 0xF6}, \
+        .ND.CapContainer.TLV.Tag = 0x04, \
+        .ND.CapContainer.TLV.Len = 0x06, \
+        .ND.CapContainer.TLV.FileID = {0xE1, 0x04}, \
+        .ND.CapContainer.TLV.MaxFileSize = {0x0B, 0xDF}, \
+        .ND.CapContainer.TLV.ReadAccess = 0x00, \
+        .ND.CapContainer.TLV.WriteAccess = 0x00, \
+        .ND.NDEFTextRecord.FileID = {0xE1, 0x04},
+        .ND.NDEFTextRecord.NLen = {0x00, 8 + sizeof(INTRO_STRING) + 14}, \
+        .ND.NDEFTextRecord.Flags = 0xD1,\
+        .ND.NDEFTextRecord.RecordTypeLength = 0x01, \
+        .ND.NDEFTextRecord.TextRecordLength = 4 + sizeof(INTRO_STRING) + 14, \
+        .ND.NDEFTextRecord.Type = 0x54, /*'T'*/ \
+        .ND.NDEFTextRecord.StatusByte = 0x02, \
+        .ND.NDEFTextRecord.Language = {0x65, 0x6E}, /*'e','n'*/ \
+        .ND.NDEFTextRecord.TextMessage = INTRO_STRING "UP 0xFFFFFFFF\n" \
+
+};
+
+unsigned char versionStr[] = INTRO_STRING;
+unsigned char uptimeStr_I2C[] = {0x00, DATA_START + sizeof(versionStr) - 1, 'U','P',' ','0','x','F','F','F','F', 'F','F','F','F','\n'};
 
 void NFCInterfaceSetup(void) {
-	// Reset the RF430 using its reset pin. Normally on power up this wouldn't be necessary,
-	// but it's good in case something has happened...
-	RF430_PORT_SEL &= ~RF430_RST;
-	RF430_PORT_SEL2 &= ~RF430_RST;
-	RF430_PORT_OUT &= ~RF430_RST; // Reset pin is active low. Reset device
-	RF430_PORT_DIR |= RF430_RST;
-	__delay_cycles(1000); // Wait a bit
-	RF430_PORT_OUT |= RF430_RST; // Release the RF430 to on
+    // Reset the RF430 using its reset pin. Normally on power up this wouldn't be necessary,
+    // but it's good in case something has happened...
+    RF430_PORT_SEL &= ~RF430_RST;
+    RF430_PORT_SEL2 &= ~RF430_RST;
+    RF430_PORT_OUT &= ~RF430_RST; // Reset pin is active low. Reset device
+    RF430_PORT_DIR |= RF430_RST;
+    __delay_cycles(1000); // Wait a bit
+    RF430_PORT_OUT |= RF430_RST; // Release the RF430 to on
 
-	__delay_cycles(100000);
+    __delay_cycles(100000);
     // Should set up interrupt here?
 
-	while(!(ReadRegister_WordAddress(RF430_ADDRESS, STATUS_REG) & READY)); //wait until READY bit has been set
-	/****************************************************************************/
+    while(!(ReadRegister_WordAddress(RF430_ADDRESS, STATUS_REG) & READY)); //wait until READY bit has been set
+    /****************************************************************************/
     /* Errata Fix : Unresponsive RF - recommended firmware                      */
     /****************************************************************************/
-	{
-		//Please implement this fix as given in this block.  It is important that
-		//no line be removed or changed.
-		unsigned char version;
-		version = ReadRegister_WordAddress(RF430_ADDRESS, VERSION_REG);  // read the version register.  The fix changes based on what version of the
-											   // RF430 is being used.  Version C and D have the issue.  Next versions are
-											   // expected to have this issue corrected Ver C = 0x01, Ver D = 0x02
+    {
+        //Please implement this fix as given in this block.  It is important that
+        //no line be removed or changed.
+        unsigned char version;
+        version = ReadRegister_WordAddress(RF430_ADDRESS, VERSION_REG);  // read the version register.  The fix changes based on what version of the
+                                               // RF430 is being used.  Version C and D have the issue.  Next versions are
+                                               // expected to have this issue corrected Ver C = 0x01, Ver D = 0x02
 
 
 
-		if (version == 0x01 || version == 0x02)
-		{	// the issue exists in these two versions
-			WriteRegister_WordAddress(RF430_ADDRESS, 0xFFE0, 0x004E);
-			WriteRegister_WordAddress(RF430_ADDRESS, 0xFFFE, 0x0080);
-			if (version == 0x01)
-			{  // Ver C
-				WriteRegister_WordAddress(RF430_ADDRESS, 0x2a98, 0x0650);
-			}
-			else
-			{	// Ver D
-				WriteRegister_WordAddress(RF430_ADDRESS, 0x2a6e, 0x0650);
-			}
-			WriteRegister_WordAddress(RF430_ADDRESS, 0x2814, 0);
-			WriteRegister_WordAddress(RF430_ADDRESS, 0x2815, 0); // Is this necessary?
-			WriteRegister_WordAddress(RF430_ADDRESS, 0xFFE0, 0);
-		}
-		//Upon exit of this block, the control register is set to 0x0
-	}
+        if (version == 0x01 || version == 0x02)
+        {   // the issue exists in these two versions
+            WriteRegister_WordAddress(RF430_ADDRESS, 0xFFE0, 0x004E);
+            WriteRegister_WordAddress(RF430_ADDRESS, 0xFFFE, 0x0080);
+            if (version == 0x01)
+            {  // Ver C
+                WriteRegister_WordAddress(RF430_ADDRESS, 0x2a98, 0x0650);
+            }
+            else
+            {   // Ver D
+                WriteRegister_WordAddress(RF430_ADDRESS, 0x2a6e, 0x0650);
+            }
+            WriteRegister_WordAddress(RF430_ADDRESS, 0x2814, 0);
+            WriteRegister_WordAddress(RF430_ADDRESS, 0x2815, 0); // Is this necessary?
+            WriteRegister_WordAddress(RF430_ADDRESS, 0xFFE0, 0);
+        }
+        //Upon exit of this block, the control register is set to 0x0
+    }
 
-    //write NDEF memory with Capability Container + NDEF message
-    WriteContinuous_I2C(RF430_ADDRESS, NDEF_Application_Data, sizeof(NDEF_Application_Data));
+    //write NDEF memory with full Capability Container + NDEF message
+    WriteContinuous_I2C(RF430_ADDRESS, (unsigned char *)(&NDEF_Data), sizeof(NDEF_Data));
     WriteRegister_WordAddress(RF430_ADDRESS, CONTROL_REG, RF_ENABLE);
+}
 
+const char byteHexTable[] =
+    {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
+
+inline void ByteToHexString(unsigned char x, unsigned char *x_e) {
+    *x_e-- = byteHexTable[x && 0xF];
+    *x_e = byteHexTable[x >> 4];
+}
+
+inline void WordToHexString(uint16_t x, unsigned char *x_e) {
+    *x_e-- = *(byteHexTable + (x && 0xF));
+    *x_e-- = *(byteHexTable + ((x >> 4) && 0xF));
+    *x_e-- = *(byteHexTable + ((x >> 8) && 0xF));
+    *x_e = *(byteHexTable + (x >> 12));
+}
+
+inline void DoubleWordToHexString(uint32_t x, unsigned char *x_e) {
+    uint16_t x1, x2;
+
+    x1 = x && 0xFFFF;
+    x2 = x >> 16;
+    WordToHexString(x2,x_e - 4);
+    WordToHexString(x1,x_e);
+}
+
+void UpdateNFC(void) {
+    static unsigned char *uptimeString = uptimeStr_I2C + 6;
+
+    if ((ReadRegister_WordAddress(RF430_ADDRESS, STATUS_REG) & (READY | RF_BUSY | CRC_ACTIVE)) != READY) {
+        return;
+    }
+    else {
+        WriteRegister_WordAddress(RF430_ADDRESS, CONTROL_REG, 0x00); // Disable RF
+        WordToHexString((uint16_t) Uptime, uptimeString + 8);
+        //memcpy(uptimeString, &Uptime, sizeof(Uptime));
+        WriteContinuous_I2C(RF430_ADDRESS, uptimeStr_I2C, sizeof(uptimeStr_I2C));
+        WriteRegister_WordAddress(RF430_ADDRESS, CONTROL_REG, RF_ENABLE);
+    }
 }
 

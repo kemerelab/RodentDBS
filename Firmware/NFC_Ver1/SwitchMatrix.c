@@ -56,42 +56,42 @@ int disableStimulationFlag = 0;
 
 inline void SetupSwitchMatrix(void) {
     //switch pin setup
-    P1DIR |= S1 + S2 + S3 + S4;	    //set pins 1.1, 1.2, 1.3, and 1.4 as outputs
+    P1DIR |= S1 + S2 + S3 + S4;     //set pins 1.1, 1.2, 1.3, and 1.4 as outputs
     SetSwitchesOff();
     disableStimulationFlag = 0;
 }
 
 inline void EnableStimulation(void) {
     // main timer interrupt setup
-    TA0CCTL0 = CCIE;	//Puts the timer control on CCR0
-    TA0CCR0 = InterPulseInterval;	//First interrupt period
-    TA0CTL = TASSEL_2 + MC_2 + ID_3;	//Use SMCLK to interrupt (because VLO wouldn't meet timing requirement of 60us)
+    TA0CCTL0 = CCIE;    //Puts the timer control on CCR0
+    TA0CCR0 = InterPulseInterval;   //First interrupt period
+    TA0CTL = TASSEL_2 + MC_2; // Use SMCLK for source (1 MHz)
     NextStimulationState = FORWARD;
 }
 
 inline void DisableStimulation (void) {
-	disableStimulationFlag = 1;
+    disableStimulationFlag = 1;
 }
 
 inline void SetSwitchesOff(void) {
-	P1OUT &= ~(S1 + S2 + S3 + S4);
+    P1OUT &= ~(S1 + S2 + S3 + S4);
     NextStimulationState = OFF;
 }
 
 inline void SetSwitchesForward(void) {
-	P1OUT &= ~(S1 + S4);
-	P1OUT |= (S3 + S2);
+    P1OUT &= ~(S1 + S4);
+    P1OUT |= (S3 + S2);
     NextStimulationState = REVERSE;
 }
 
 inline void SetSwitchesReverse(void) {
-	P1OUT &= ~(S3 + S2);
-	P1OUT |= ~(S1 + S4);
+    P1OUT &= ~(S3 + S2);
+    P1OUT |= ~(S1 + S4);
     NextStimulationState = GROUNDED;
 }
 
 inline void SetSwitchesGround(void) {
-	P1OUT &= ~(S1 + S2 + S3 + S4);
-	P1OUT |= (S1 + S2);
+    P1OUT &= ~(S1 + S2 + S3 + S4);
+    P1OUT |= (S1 + S2);
     NextStimulationState = FORWARD;
 }
