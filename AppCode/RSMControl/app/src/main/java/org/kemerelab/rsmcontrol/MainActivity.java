@@ -2,16 +2,14 @@ package org.kemerelab.rsmcontrol;
 
 import org.ndeftools.Message;
 import org.ndeftools.Record;
+import org.ndeftools.externaltype.ExternalTypeRecord;
 import org.ndeftools.util.activity.NfcReaderActivity;
-import org.ndeftools.wellknown.TextRecord;
 
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.text.Editable;
 import android.text.InputType;
-import android.text.TextWatcher;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -20,7 +18,6 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.NumberPicker;
 import android.widget.ScrollView;
-import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -30,7 +27,7 @@ public class MainActivity extends NfcReaderActivity {
 
 
     static final String RSM_DEVICE_STRUCTURE = "rsmDevice";
-    static final String NDEF_TEXT_TO_BE_WRITTEN = "NDEF_Text";
+    static final String NDEF_DATA_TO_BE_WRITTEN = "NDEF_Data";
 
     RSMDevice rsmDevice;
 
@@ -59,7 +56,7 @@ public class MainActivity extends NfcReaderActivity {
 
         NumberPicker np = (NumberPicker) findViewById(R.id.stimulationFrequencyPicker);
         np.setMaxValue(200);
-        np.setMinValue(0);
+        np.setMinValue(20);
 
         np = (NumberPicker) findViewById(R.id.stimulationAmplitudePicker);
         np.setMaxValue(100);
@@ -133,8 +130,7 @@ public class MainActivity extends NfcReaderActivity {
     public void onProgramButtonClicked (View view) {
         updateRSMDeviceValues();
         Intent intent = new Intent(this, NFCWriteActivity.class);
-        intent.putExtra(NDEF_TEXT_TO_BE_WRITTEN, rsmDevice.getDeviceInfoAsNDEFString());
-        //intent.putExtra(NDEF_TEXT_TO_BE_WRITTEN, "Hello Bigger World!");
+        intent.putExtra(NDEF_DATA_TO_BE_WRITTEN, rsmDevice.getDeviceInfoAsByteArray());
         startActivity(intent);
     }
 
@@ -185,14 +181,14 @@ public class MainActivity extends NfcReaderActivity {
         rsmDevice.deviceID = Integer.parseInt(t.getText().toString());
 
         NumberPicker np = (NumberPicker) findViewById(R.id.stimulationFrequencyPicker);
-        Integer period = 1000000 / np.getValue();
+        short period = (short) ((int) 1000000 / (int) np.getValue());
         rsmDevice.stimulationPeriod = period;
 
         np = (NumberPicker) findViewById(R.id.stimulationAmplitudePicker);
-        rsmDevice.stimulationAmplitude = np.getValue();
+        rsmDevice.stimulationAmplitude = (short) np.getValue();
 
         np = (NumberPicker) findViewById(R.id.stimulationPulseWidthPicker);
-        rsmDevice.stimulationWidth = np.getValue();
+        rsmDevice.stimulationWidth = (short) np.getValue();
     }
 
 
@@ -323,16 +319,22 @@ public class MainActivity extends NfcReaderActivity {
             toast(getString(R.string.readMultipleRecordNDEFMessage));
         } else {
             Record record = message.get(0);
-            if (record instanceof TextRecord) {
-                String text = ((TextRecord) record).getText();
-                RSMDevice device = new RSMDevice(text);
-                if (device.isValid == true) {
-                    toast(getString(R.string.readRSMNDEFMessage));
-                    rsmDevice = device;
-                    updateDeviceDisplay();
+            if (record instanceof ExternalTypeRecord) {
+                String domain = ((ExternalTypeRecord) record).getDomain();
+                String recordType = ((ExternalTypeRecord) record).getType();
+                if ((((ExternalTypeRecord) record).getDomain().equals("rnel.rice.edu")) &&
+                        (((ExternalTypeRecord) record).getType().equals("rsm"))) {
+                    RSMDevice device = new RSMDevice(((ExternalTypeRecord) record).getData());
+                    if (device.isValid == true) {
+                        toast(getString(R.string.readRSMNDEFMessage));
+                        rsmDevice = device;
+                        updateDeviceDisplay();
+                    } else {
+                        toast(getString(R.string.readRSMMessageError));
+                    }
                 }
                 else {
-                    toast(getString(R.string.readSingleRecordNDEFMessage) + text);
+                    toast(getString(R.string.readExternalRecordNDEFMessage));
                 }
             }
             else {

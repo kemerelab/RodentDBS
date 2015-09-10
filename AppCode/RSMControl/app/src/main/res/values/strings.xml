@@ -23,7 +23,9 @@
     <string name="nfcSettingEnabled">NFC enabled in settings.</string>
     <string name="nfcSettingDisabled">NFC disabled in settings.</string>
 
+    <string name="readRSMMessageError">Read invalid RSM Module NDEF message.</string>
     <string name="readSingleRecordNDEFMessage">Read irrelevant single-record NDEF message.</string>
+    <string name="readExternalRecordNDEFMessage">Read irrelevant external-record NDEF message.</string>
     <string name="readMultipleRecordNDEFMessage">Read irrelevant multi-record NDEF message.</string>
     <string name="readEmptyMessage">Read irrelevant empty message.</string>
     <string name="readNonNDEFMessage">Read irrelevant non-NDEF message.</string>

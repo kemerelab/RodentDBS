@@ -1,29 +1,28 @@
 package org.kemerelab.rsmcontrol;
 
-import android.app.Activity;
 import android.content.Intent;
-import android.graphics.Color;
 import android.nfc.NdefMessage;
+import android.nfc.NdefRecord;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import org.kemerelab.rsmcontrol.R;
 import org.ndeftools.Message;
+import org.ndeftools.externaltype.GenericExternalTypeRecord;
 import org.ndeftools.util.activity.NfcTagWriterActivity;
-import org.ndeftools.wellknown.TextRecord;
 
 import java.nio.charset.Charset;
-import java.util.Locale;
+
+import android.util.Log;
+
 
 public class NFCWriteActivity extends NfcTagWriterActivity {
 
     //RSMDevice rsmDevice;
-    String NDEFText;
+    byte[] NDEFData;
 
     public enum NFCAvalability {
         UNINITIALIZED, NOT_AVAIALBLE, AVAILABLE_NOT_ENABLED, AVAILABLE_ENABLED
@@ -37,9 +36,9 @@ public class NFCWriteActivity extends NfcTagWriterActivity {
         setContentView(R.layout.activity_nfcwrite);
 
         Intent intent = getIntent();
-        NDEFText = intent.getStringExtra(MainActivity.NDEF_TEXT_TO_BE_WRITTEN);
+        NDEFData = intent.getByteArrayExtra(MainActivity.NDEF_DATA_TO_BE_WRITTEN);
         TextView t = (TextView) findViewById(R.id.writerStatusText);
-        t.setText(NDEFText);
+        t.setText("Ready to write");
 
         // lets start detecting NDEF message using foreground mode
         setDetecting(true);
@@ -162,13 +161,23 @@ public class NFCWriteActivity extends NfcTagWriterActivity {
         // compose our own message
         Message message = new Message();
 
-        // add a Text Record with the message which is entered
-        TextRecord textRecord = new TextRecord();
-        textRecord.setText(NDEFText);
-        //textRecord.setText(text.getText().toString());
-        textRecord.setEncoding(Charset.forName("UTF-8"));
-        textRecord.setLocale(Locale.ENGLISH);
-        message.add(textRecord);
+        // add an External type Record with the proper message
+        String domain = "rnel.rice.edu";
+        String externalRecordType = "rsm";
+
+        byte[] byteDomain = domain.getBytes(Charset.forName("UTF-8"));
+        byte[] byteType = externalRecordType.getBytes(Charset.forName("UTF-8"));
+        byte[] b = new byte[byteDomain.length + 1 + byteType.length];
+        System.arraycopy(byteDomain, 0, b, 0, byteDomain.length);
+        b[byteDomain.length] = ':';
+        System.arraycopy(byteType, 0, b, byteDomain.length + 1, byteType.length);
+
+        byte[] EMPTY = new byte[]{};
+
+        // external type id must be empty
+        //NdefRecord record =  new NdefRecord(NdefRecord.TNF_EXTERNAL_TYPE, b, EMPTY, NDEFData);
+        GenericExternalTypeRecord record = new GenericExternalTypeRecord(domain, externalRecordType, NDEFData);
+        message.add(record);
 
         return message.getNdefMessage();
     }

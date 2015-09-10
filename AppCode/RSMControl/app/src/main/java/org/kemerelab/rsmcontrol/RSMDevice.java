@@ -3,6 +3,10 @@ package org.kemerelab.rsmcontrol;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.charset.Charset;
 import java.util.StringTokenizer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -13,18 +17,18 @@ import java.util.regex.Pattern;
 public class RSMDevice implements Parcelable {
 
 
-    public Integer stimulationEnabled; // true or false
-    public Integer stimulationWidth; // length of each phase of biphasic pulse in us
+    public byte stimulationEnabled; // true or false
+    public short stimulationWidth; // length of each phase of biphasic pulse in us
     public Integer deviceID;
 
-    public Integer stimulationPeriod; // in us
-    public Integer stimulationAmplitude; // in uV
+    public short stimulationPeriod; // in us
+    public short stimulationAmplitude; // in uV
 
     public Integer uptime; // system uptime in seconds
     public Integer lastUpdate; // time since last update of data in seconds
-    public Integer batteryVoltage; // battery voltage in millivolts
+    public short batteryVoltage; // battery voltage in millivolts
 
-    public Integer commandVersion;
+    public byte commandVersion;
 
     public Boolean isValid = false;
 
@@ -32,7 +36,7 @@ public class RSMDevice implements Parcelable {
     public RSMDevice() {
         deviceID = 0;
         stimulationEnabled = 0;
-        stimulationPeriod = 10000000;
+        stimulationPeriod = 10000;
         stimulationAmplitude = 0;
         stimulationWidth = 10;
         uptime = 0;
@@ -42,38 +46,49 @@ public class RSMDevice implements Parcelable {
         isValid = false;
     }
 
-    public RSMDevice(String recordString) {
+    public RSMDevice(byte[] data) {
         deviceID = 0;
         stimulationEnabled = 0;
-        stimulationPeriod = 10000000;
+        stimulationPeriod = 10000;
         stimulationAmplitude = 0;
         stimulationWidth = 0;
         uptime = 0;
         lastUpdate = 0;
         batteryVoltage = 0;
-        commandVersion = 1;
-        Pattern p = Pattern.compile("RSM(\\d{3});E(\\d{1});I(.{4});P(\\d{5});A(\\d{3});W(\\d{3});B(\\d{2});");
-        Matcher m = p.matcher(recordString);
-        isValid = false;
-        if (m.matches()) {
-            commandVersion = Integer.parseInt(m.group(1));
-            stimulationEnabled = Integer.parseInt(m.group(2));
-            deviceID = Integer.parseInt(m.group(3));
-            stimulationPeriod = Integer.parseInt(m.group(4));
-            stimulationAmplitude = Integer.parseInt(m.group(5));
-            stimulationWidth = Integer.parseInt(m.group(6));
-            batteryVoltage = Integer.parseInt(m.group(7)) * 100;
+        commandVersion = 0;
 
+        isValid = false;
+        ByteBuffer buf = ByteBuffer.wrap(data);
+        buf.order(ByteOrder.LITTLE_ENDIAN);
+        try {
+            commandVersion = buf.get();
+            deviceID = buf.getInt();
+            stimulationEnabled = buf.get();
+            stimulationPeriod = buf.getShort();
+            stimulationAmplitude = buf.getShort();
+            stimulationWidth = buf.getShort();
+            batteryVoltage = buf.getShort();
+            uptime = buf.getInt();
             isValid = true;
+        } catch (Exception e) {
+            e.printStackTrace(); // buffer underflow, for e.g.
         }
     }
 
 
-    public String getDeviceInfoAsNDEFString() {
-        //return String.format("RSM%03d;E%d;I%04d;P%05d;A%03d;W%03d;B%02d;L%02d;U%07d;",
-        return String.format("RSM%03d;E%d;I%04d;P%05d;A%03d;W%03d;B%02d;",
-                commandVersion, stimulationEnabled, deviceID, stimulationPeriod, stimulationAmplitude,
-                stimulationWidth, 0);
+    public byte[] getDeviceInfoAsByteArray() {
+        ByteBuffer buf = ByteBuffer.allocate(18); // hard coded for current data string!
+        buf.order(ByteOrder.LITTLE_ENDIAN);
+        buf.put((byte) commandVersion);
+        buf.putInt(deviceID);
+        buf.put((byte) stimulationEnabled);
+        buf.putShort((short) stimulationPeriod);
+        buf.putShort((short) stimulationAmplitude);
+        buf.putShort((short) stimulationWidth);
+        buf.putShort((short) 0); // battery voltage will get reset by device
+        buf.putInt(0); // uptime will get reset by device
+
+        return buf.array();
     }
 
     public String getLastUpdateString() {
@@ -98,7 +113,7 @@ public class RSMDevice implements Parcelable {
 
     public String getBatteryVoltageString() {
         if (batteryVoltage > 0)
-            return batteryVoltage.toString() + " mV";
+            return String.valueOf(batteryVoltage) + " mV";
         else
             return "no data";
     }
@@ -111,7 +126,7 @@ public class RSMDevice implements Parcelable {
 
     public void writeToParcel(Parcel out, int flags) {
         out.writeInt(deviceID);
-        out.writeInt(stimulationEnabled);
+        out.writeByte(stimulationEnabled);
         out.writeInt(stimulationPeriod);
         out.writeInt(stimulationAmplitude);
         out.writeInt(stimulationWidth);
@@ -135,10 +150,10 @@ public class RSMDevice implements Parcelable {
         isValid = false;
 
         deviceID = in.readInt();
-        stimulationEnabled = in.readInt();
-        stimulationPeriod = in.readInt();
-        stimulationAmplitude = in.readInt();
-        stimulationWidth = in.readInt();
+        stimulationEnabled = in.readByte();
+        stimulationPeriod = (short) in.readInt();
+        stimulationAmplitude = (short) in.readInt();
+        stimulationWidth = (short) in.readInt();
     }
 
 }
