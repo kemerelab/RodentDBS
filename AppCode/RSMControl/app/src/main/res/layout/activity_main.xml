@@ -87,6 +87,28 @@
                 </TableRow>
 
                 <TableRow
+                    android:gravity="left"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <TextView
+                        android:text="@string/enableSwitchLabel"
+                        android:gravity="right"
+                        android:id="@+id/enableStimCaption" />
+
+                    <Switch
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:id="@+id/enableStimSwitch"
+                        android:layout_gravity="right"
+                        android:onClick="onEnableSwitchToggled"
+                        android:textOff="Off"
+                        android:textOn="On"/>
+
+                </TableRow>
+
+
+                <TableRow
                     android:layout_width="match_parent"
                     android:layout_height="match_parent">
 

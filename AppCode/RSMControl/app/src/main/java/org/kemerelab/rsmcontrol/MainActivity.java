@@ -114,6 +114,16 @@ public class MainActivity extends NfcReaderActivity {
         toast.show();
     }
 
+    public void onEnableSwitchToggled (View view) {
+        if (((Switch) view).isChecked()) {
+            rsmDevice.stimulationEnabled = 1;
+        }
+        else {
+            rsmDevice.stimulationEnabled = 0;
+        }
+    }
+
+
     public void onEditSwitchToggled (View view) {
         if (((Switch) view).isChecked()) {
             editingDeviceInfo = true;
@@ -152,6 +162,9 @@ public class MainActivity extends NfcReaderActivity {
             EditText t = (EditText) findViewById(R.id.deviceIDText);
             t.setInputType(InputType.TYPE_NULL);
 
+            Switch sw = (Switch) findViewById(R.id.enableStimSwitch);
+            sw.setEnabled(false);
+
             NumberPicker np = (NumberPicker) findViewById(R.id.stimulationFrequencyPicker);
             np.setEnabled(false);
 
@@ -167,6 +180,9 @@ public class MainActivity extends NfcReaderActivity {
             EditText t = (EditText) findViewById(R.id.deviceIDText);
             t.setInputType(InputType.TYPE_CLASS_TEXT);
 
+            Switch sw = (Switch) findViewById(R.id.enableStimSwitch);
+            sw.setEnabled(true);
+
             NumberPicker np = (NumberPicker) findViewById(R.id.stimulationFrequencyPicker);
             np.setEnabled(true);
 
@@ -181,6 +197,13 @@ public class MainActivity extends NfcReaderActivity {
     public void updateRSMDeviceValues() {
         EditText t = (EditText) findViewById(R.id.deviceIDText);
         rsmDevice.deviceID = t.getText().toString().getBytes(StandardCharsets.UTF_8);
+
+        Switch s = (Switch) findViewById(R.id.enableStimSwitch);
+        if (s.isChecked())
+            rsmDevice.stimulationEnabled = 1;
+        else
+            rsmDevice.stimulationEnabled = 0;
+
 
         NumberPicker np = (NumberPicker) findViewById(R.id.stimulationFrequencyPicker);
         short period = (short) ((int) 1000000 / (int) np.getValue());
@@ -232,6 +255,10 @@ public class MainActivity extends NfcReaderActivity {
         EditText t = (EditText) findViewById(R.id.deviceIDText);
         if (t != null)
             t.setText(new String(rsmDevice.deviceID), TextView.BufferType.EDITABLE);
+
+        Switch s = (Switch) findViewById(R.id.enableStimSwitch);
+        s.setChecked(rsmDevice.stimulationEnabled != 0);
+
 
         NumberPicker np = (NumberPicker) findViewById(R.id.stimulationFrequencyPicker);
         int freq = 0;

@@ -59,14 +59,15 @@ inline void SetupSwitchMatrix(void) {
     P1DIR |= S1 + S2 + S3 + S4;     //set pins 1.1, 1.2, 1.3, and 1.4 as outputs
     SetSwitchesOff();
     disableStimulationFlag = 0;
+    //TA0CTL = TASSEL_2 + MC_2; // Use SMCLK for source (1 MHz)
+    BCSCTL3 |= LFXT1S_2;  // ACLK = LFXT1 = VLO
+    TA0CTL = TASSEL_1 + MC_2; // Use ACLK for source (1 MHz)
 }
 
 inline void EnableStimulation(void) {
-    // main timer interrupt setup
-    TA0CCTL0 = CCIE;    //Puts the timer control on CCR0
-    TA0CCR0 = DeviceData.StimParams.Period;   //First interrupt period
-    TA0CTL = TASSEL_2 + MC_2; // Use SMCLK for source (1 MHz)
+    TA0CCR0 = DeviceData.StimParams.Period;   // First interrupt period
     NextStimulationState = FORWARD;
+    TA0CCTL0 = CCIE;    // Enable interrupt
 }
 
 inline void DisableStimulation (void) {
@@ -94,4 +95,35 @@ inline void SetSwitchesGround(void) {
     P1OUT &= ~(S1 + S2 + S3 + S4);
     P1OUT |= (S1 + S2);
     NextStimulationState = FORWARD;
+}
+
+
+#pragma vector = TIMER0_A0_VECTOR
+__interrupt void Timer_A0_ISR(void)
+{
+    switch(NextStimulationState) {
+    case FORWARD:
+        SetSwitchesForward();
+        CCR0+=DeviceData.StimParams.PulseWidth; //increment CCR0
+        break;
+    case REVERSE:
+        SetSwitchesReverse();
+        CCR0+=DeviceData.StimParams.PulseWidth; //increment CCR0
+        break;
+    case GROUNDED:
+        SetSwitchesGround();
+        if (disableStimulationFlag) {
+            NextStimulationState = OFF;
+            TA0CCTL0 = ~CCIE;
+        }
+        else
+            CCR0 += DeviceData.StimParams.Period - \
+               (DeviceData.StimParams.PulseWidth + DeviceData.StimParams.PulseWidth); //increment CCR0
+        break;
+    case OFF:
+    default: // should never reach here
+        SetSwitchesGround();
+        TA0CCTL0 = ~CCIE;
+        break;
+    }
 }

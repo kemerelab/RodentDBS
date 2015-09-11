@@ -5,6 +5,7 @@
 
     <string name="nfcStatusString">NFC Status</string>
     <string name="deviceIDlabel">Device ID</string>
+    <string name="enableSwitchLabel">Stimulation</string>
     <string name="stimFrequencyLabel">Stimulation frequency</string>
     <string name="stimAmplitudeLabel">Stimulaton amplitude</string>
     <string name="pulseWidthLabel">Pulse width</string>

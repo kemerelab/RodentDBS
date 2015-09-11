@@ -44,7 +44,6 @@
 #include "Firmware.h"
 #include "I2C.h"
 #include "stdint.h"
-#include "string.h"
 
 struct I2C_NDEF_FullRecord NDEF_Data = { \
         .MemoryAddress = {0x00, 0x00}, \
@@ -130,38 +129,26 @@ void UpdateDeviceStatus(void) {
     }
     else {
         WriteRegister_WordAddress(CONTROL_REG, 0x00); // Disable RF
-        DeviceData.Status.Uptime = DeviceMasterClock;
-        memcpy(statusString_I2C+2, (unsigned char *)&(DeviceData.Status), sizeof(DeviceStatus_t));
+        memcpy(statusString_I2C+2, (unsigned char *)&(DeviceStatus), sizeof(DeviceStatus_t));
         WriteContinuous_I2C(statusString_I2C, sizeof(statusString_I2C));
         WriteRegister_WordAddress(CONTROL_REG, RF_ENABLE);
     }
 }
 
-void ReadDeviceParams(void) {
-    StimParams_t NewStimParams;
+int ReadDeviceParams(StimParams_t *NewStimParams) {
     char valuesChanged = 1;
 
     InitializeI2CSlave(RF430_ADDRESS);
 
     if ((ReadRegister_WordAddress(STATUS_REG) & (READY | RF_BUSY | CRC_ACTIVE)) != READY) {
-        return;
+        return 0;
     }
     else {
         WriteRegister_WordAddress(CONTROL_REG, 0x00); // Disable RF
-        __delay_cycles(20);
-        ReadMemory_WordAddress(STIMPARAMS_ADDR, (unsigned char*)&NewStimParams, sizeof(NewStimParams));
-        valuesChanged = memcmp((unsigned char*)&NewStimParams,
-                (unsigned char*)&(DeviceData.StimParams), sizeof(NewStimParams));
-        if (valuesChanged != 0) {
-            DeviceData.StimParams.Enabled = NewStimParams.Enabled;
-            DeviceData.StimParams.Period = NewStimParams.Period;
-            DeviceData.StimParams.Amplitude = NewStimParams.Amplitude;
-            DeviceData.StimParams.PulseWidth = NewStimParams.PulseWidth;
-            DeviceData.Status.LastUpdate = DeviceMasterClock;
-        }
-        __delay_cycles(8000);
-
+        //__delay_cycles(20);
+        ReadMemory_WordAddress(STIMPARAMS_ADDR, (unsigned char*)NewStimParams, sizeof(NewStimParams));
         WriteRegister_WordAddress(CONTROL_REG, RF_ENABLE);
+        return 1;
     }
 
 }

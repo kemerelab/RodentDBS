@@ -126,6 +126,7 @@ struct __attribute__((__packed__)) I2C_NDEF_FullRecord {
 
 void NFCInterfaceSetup(void);
 void UpdateDeviceStatus(void);
-void ReadDeviceParams(void);
+int ReadDeviceParams(StimParams_t *NewStimParams);
+
 
 #endif

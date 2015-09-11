@@ -46,50 +46,32 @@
 #include "BatteryStatus.h"
 #include "Firmware.h"
 
-long int BatteryStatusTickCounter;
-
-batteryStatusStateEnum BatteryStatusState;
-
 /*
  * Initialize the ADC10 to prepare to measure the battery voltage.
  */
 void BatteryStatusSetup(void){  //ADC10 setup function
-    BatteryStatusState = ASLEEP;
-    BatteryStatusTickCounter = 0;
-
     ADC10CTL0 = SREF_1 + REF2_5V; // User Vref+ as positive rail and Vss as negative; Use 2.5 V Vref
-    ADC10CTL0 = ADC10CTL0 + ADC10SR; // Set low speed sampling to minimize reference buffer power
-    ADC10CTL0 = ADC10CTL0 + ADC10SHT_3; // Sample for longest period (64 clks)
-    ADC10CTL1 = INCH_11; // For data source, use internal voltage, (Vcc-Vss)/2
-    ADC10CTL1 = ADC10CTL1 + ADC10SSEL_3; // Use the master clock for the ADC (set as 8 MHz)
-    ADC10AE0 = BIT0;
-
+    ADC10CTL0 |= ADC10SR; // Set low speed sampling to minimize reference buffer power
+    ADC10CTL0 |= ADC10SHT_3; // Sample for longest period (64 clks)
+    ADC10CTL1 |= INCH_11; // For data source, use internal voltage, (Vcc-Vss)/2
+    ADC10CTL1 |= ADC10SSEL_3; // Use the master clock for the ADC (set as 8 MHz)
 }
 
-void ExecuteBatteryStatus(void) {
-    switch (BatteryStatusState) {
-    case ASLEEP:
-        BatteryStatusState = STARTING_REF;
-        ADC10CTL0 = ADC10CTL0 | (REFON + ADC10ON + ADC10IE);
-        BatteryStatusTickCounter = 30; // Need to wait 30 us before next call to function
-        break;
-    case STARTING_REF:
-        BatteryStatusState = SAMPLING;
-        ADC10CTL0 |= ENC; // ADC10 enable set; this triggers sampling and will result in the ISR when data ready
-        BatteryStatusTickCounter = 200; // wait for this to have occured and then go abck asleep
-        break;
-    case SAMPLING:
-        BatteryStatusState = ASLEEP;
-        BatteryStatusTickCounter = 1000000; // wait for a second to sample next
-        break;
-    }
+void CheckBattery(void) {
+    ADC10CTL0 |= (REFON + ADC10ON + ADC10IE); // Turn everything on
+    __delay_cycles(35*8); // REF needs ~30 us to settle, so give it 35
+    ADC10CTL0 |= (ENC + ADC10SC); // ADC10 enable/start; this triggers sampling
+                                // and will result in the ISR when data ready
+    __bis_SR_register(CPUOFF + GIE); // Enter LPM0 w/ interrupts (will stall here
+                                            // until ADC finishes).
 }
 
 #pragma vector=ADC10_VECTOR
 __interrupt void ADC10_ISR(void)
-{   //
+{
+    DeviceStatus.BatteryVoltage = ADC10MEM;
     ADC10CTL0 &= ~ENC;      //disable ADC
     ADC10CTL0 &= ~(REFON + ADC10ON + ADC10IE); // and then shutdown completely
-    DeviceData.Status.BatteryVoltage=ADC10MEM;
+    __bic_SR_register_on_exit(CPUOFF); // Exit LPM0
 }
 

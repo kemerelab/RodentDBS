@@ -124,7 +124,7 @@ public class RSMDevice implements Parcelable {
 
     public String getBatteryVoltageString() {
         if (batteryVoltage > 0)
-            return String.valueOf(batteryVoltage) + " mV";
+            return String.valueOf((int) batteryVoltage * 2500 * 2 / 1024);
         else
             return "no data";
     }

@@ -55,20 +55,23 @@
 #include "SwitchMatrix.h"
 #include "I2C.h"
 #include "NFCInterface.h"
+#include "string.h"
+
 
 /* Program coordination variables */
-volatile unsigned char ProgramState = 0;      // status variable
+volatile unsigned char MainLoopMutex = 0;      // status variable
 
 volatile DeviceData_t DeviceData = {\
         .ID.idStr = DEFAULT_DEVICE_IDSTR, .ID.firmwareVersion = PROTOCOL_VERSION, \
         .Status.BatteryVoltage = 0, .Status.Uptime = 0, .Status.LastUpdate = 0,\
         .StimParams.Enabled = 0, .StimParams.Period = 7500, \
-        .StimParams.Amplitude = 100, .StimParams.PulseWidth = 60 };
+        .StimParams.Amplitude = 100, .StimParams.PulseWidth = 600 };
+
+volatile DeviceStatus_t DeviceStatus = {.BatteryVoltage = 0, .Uptime = 0, .LastUpdate = 0};
 
 volatile uint32_t DeviceMasterClock;
 
-volatile uint16_t StimulationPhase;
-volatile uint16_t StimParameterMutex;
+volatile int StimParamsChanged = 0;
 
 unsigned int x=0;
 
@@ -97,6 +100,10 @@ inline void SetOutputCurrent (void) {
 
 void main(void)
 {
+    StimParams_t NewStimParams = { .Enabled = 0, .Period = 7500, \
+            .Amplitude = 100, .PulseWidth = 600 };
+
+    int StimParamsChanged = 0;
 
     WDTCTL = WDTPW + WDTHOLD;                 // Stop WDT
 
@@ -111,7 +118,7 @@ void main(void)
 
     I2CSetup();
 
-    //BatteryStatusSetup();
+    BatteryStatusSetup();
 
     //SetupSwitchMatrix();
 
@@ -128,57 +135,45 @@ void main(void)
 
     //__enable_interrupt();   //global interrupt enable
 
-    DeviceMasterClock = 0;
-
-    P1OUT = 1;
-
     while (1) {
-        ProgramState = 0;
+        MainLoopMutex = 0;
         __bis_SR_register(LPM1_bits | GIE);        // Enter LPM1 w/ interrupts
-        ProgramState = 1;
+        MainLoopMutex = 1;
+
         UpdateDeviceStatus();
 
-        ProgramState = 0;
+        MainLoopMutex = 0;
         __bis_SR_register(LPM1_bits | GIE);        // Enter LPM1 w/ interrupts
-        ProgramState = 1;
-        ReadDeviceParams();
+        MainLoopMutex = 1;
 
-        if (P1OUT && 0x01)
-            P1OUT &= 0xFE;
-        else
-            P1OUT |= 0x01;
-    }
-}
-
-#pragma vector = TIMER0_A0_VECTOR   //says that the interrupt that follows will use the "TIMER0_A0_VECTOR" interrupt
-__interrupt void Timer_A0_ISR(void)
-{
-    switch(NextStimulationState) {
-    case FORWARD:
-        SetSwitchesForward();
-        CCR0+=DeviceData.StimParams.PulseWidth; //increment CCR0
-        break;
-    case REVERSE:
-        SetSwitchesReverse();
-        CCR0+=DeviceData.StimParams.PulseWidth; //increment CCR0
-        break;
-    case GROUNDED:
-        SetSwitchesGround();
-        if (disableStimulationFlag) {
-            NextStimulationState = OFF;
-            TA0CCTL0 = ~CCIE;
+        if (ReadDeviceParams(&NewStimParams) != 0) {
+            StimParamsChanged = memcmp((unsigned char*)&NewStimParams,
+                    (unsigned char*)&(DeviceData.StimParams), sizeof(NewStimParams));
+            if (StimParamsChanged != 0) {
+                DisableStimulation();
+                DeviceData.StimParams.Period = NewStimParams.Period;
+                DeviceData.StimParams.Amplitude = NewStimParams.Amplitude;
+                DeviceData.StimParams.PulseWidth = NewStimParams.PulseWidth;
+                DeviceData.StimParams.Enabled = NewStimParams.Enabled;
+                if (NewStimParams.Enabled != 0) {
+                    P1OUT = 1;
+                    EnableStimulation();
+                }
+                else {
+                    P1OUT = 0;
+                }
+                DeviceStatus.LastUpdate = DeviceStatus.Uptime;
+            }
         }
-        else
-            CCR0 += DeviceData.StimParams.Period - \
-               (DeviceData.StimParams.PulseWidth + DeviceData.StimParams.PulseWidth); //increment CCR0
-        break;
-    case OFF:
-    default: // should never reach here
-        SetSwitchesGround();
-        TA0CCTL0 = ~CCIE;
-        break;
+
+        MainLoopMutex = 0;
+        __bis_SR_register(LPM1_bits | GIE);        // Enter LPM1 w/ interrupts
+        MainLoopMutex = 1;
+
+        CheckBattery();
     }
 }
+
 
 // Timer A1 interrupt service routine => Assume CCR0 set for 1 ms ticks
 #pragma vector=TIMER1_A0_VECTOR
@@ -189,9 +184,9 @@ __interrupt void Timer1_A0_ISR (void)
     TA1CCR0 += 1000;        // 1 ms period
 
     if (--SecondCounter == 0) {
-        DeviceMasterClock += 1;
+        DeviceStatus.Uptime += 1;
         SecondCounter = 100;
-        if (ProgramState == 0) // If the master loop has gone to sleep then wake it up
+        if (MainLoopMutex == 0) // If the master loop has gone to sleep then wake it up
             __bic_SR_register_on_exit(LPM1_bits);
     }
 }

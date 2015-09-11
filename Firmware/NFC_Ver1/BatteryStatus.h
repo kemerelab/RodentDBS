@@ -55,14 +55,10 @@
 #include <msp430.h>
 
 extern int BatteryVoltage;
-extern long int BatteryStatusTickCounter;
-
-typedef enum {ASLEEP, STARTING_REF, SAMPLING} batteryStatusStateEnum;
-extern batteryStatusStateEnum BatteryStatusState;
 
 void BatteryStatusSetup(void);  // Setup ADC10 and initialize values
 
-void ExecuteBatteryStatus(void);
+void CheckBattery(void);
 
 #endif
 
