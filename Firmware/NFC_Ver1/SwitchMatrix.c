@@ -64,7 +64,7 @@ inline void SetupSwitchMatrix(void) {
 inline void EnableStimulation(void) {
     // main timer interrupt setup
     TA0CCTL0 = CCIE;    //Puts the timer control on CCR0
-    TA0CCR0 = InterPulseInterval;   //First interrupt period
+    TA0CCR0 = DeviceData.StimParams.Period;   //First interrupt period
     TA0CTL = TASSEL_2 + MC_2; // Use SMCLK for source (1 MHz)
     NextStimulationState = FORWARD;
 }

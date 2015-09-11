@@ -22,6 +22,8 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.nio.charset.StandardCharsets;
+
 
 public class MainActivity extends NfcReaderActivity {
 
@@ -178,7 +180,7 @@ public class MainActivity extends NfcReaderActivity {
 
     public void updateRSMDeviceValues() {
         EditText t = (EditText) findViewById(R.id.deviceIDText);
-        rsmDevice.deviceID = Integer.parseInt(t.getText().toString());
+        rsmDevice.deviceID = t.getText().toString().getBytes(StandardCharsets.UTF_8);
 
         NumberPicker np = (NumberPicker) findViewById(R.id.stimulationFrequencyPicker);
         short period = (short) ((int) 1000000 / (int) np.getValue());
@@ -229,10 +231,13 @@ public class MainActivity extends NfcReaderActivity {
     public void updateDeviceDisplay() {
         EditText t = (EditText) findViewById(R.id.deviceIDText);
         if (t != null)
-            t.setText(rsmDevice.deviceID.toString(), TextView.BufferType.EDITABLE);
+            t.setText(new String(rsmDevice.deviceID), TextView.BufferType.EDITABLE);
 
         NumberPicker np = (NumberPicker) findViewById(R.id.stimulationFrequencyPicker);
-        Integer freq = 1000000 / rsmDevice.stimulationPeriod;
+        int freq = 0;
+        if (rsmDevice.stimulationPeriod > 0) {
+            freq = 1000000 / rsmDevice.stimulationPeriod;
+        }
         np.setValue(freq);
 
         np = (NumberPicker) findViewById(R.id.stimulationAmplitudePicker);

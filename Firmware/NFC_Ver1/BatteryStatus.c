@@ -46,7 +46,6 @@
 #include "BatteryStatus.h"
 #include "Firmware.h"
 
-int BatteryVoltage;
 long int BatteryStatusTickCounter;
 
 batteryStatusStateEnum BatteryStatusState;
@@ -55,7 +54,6 @@ batteryStatusStateEnum BatteryStatusState;
  * Initialize the ADC10 to prepare to measure the battery voltage.
  */
 void BatteryStatusSetup(void){  //ADC10 setup function
-    BatteryVoltage = 0;
     BatteryStatusState = ASLEEP;
     BatteryStatusTickCounter = 0;
 
@@ -92,6 +90,6 @@ __interrupt void ADC10_ISR(void)
 {   //
     ADC10CTL0 &= ~ENC;      //disable ADC
     ADC10CTL0 &= ~(REFON + ADC10ON + ADC10IE); // and then shutdown completely
-    BatteryVoltage=ADC10MEM;
+    DeviceData.Status.BatteryVoltage=ADC10MEM;
 }
 

@@ -57,19 +57,15 @@
 #include "NFCInterface.h"
 
 /* Program coordination variables */
-volatile unsigned char ProgramState = 0;                            // status variable
-volatile uint32_t Uptime = 0;
-volatile uint32_t LastUpdate = 0;
-volatile uint32_t LastChange = 0;
+volatile unsigned char ProgramState = 0;      // status variable
 
-/* Stimulation parameters *
- *  - These are accessed in the stimulation code, but set in the communcation code
- */
+volatile DeviceData_t DeviceData = {\
+        .ID.idStr = "ABCD", .ID.firmwareVersion = 2, \
+        .Status.BatteryVoltage = 0, .Status.Uptime = 0, \
+        .StimParams.Enabled = 0, .StimParams.Period = 7500, \
+        .StimParams.Amplitude = 100, .StimParams.PulseWidth = 60 };
+
 volatile uint16_t StimulationPhase;
-volatile uint16_t PulseWidth;
-volatile uint16_t InterPulseInterval;
-volatile uint16_t Period;
-volatile uint16_t Amplitude;
 volatile uint16_t StimParameterMutex;
 
 unsigned int x=0;
@@ -149,11 +145,11 @@ __interrupt void Timer_A0_ISR(void)
     switch(NextStimulationState) {
     case FORWARD:
         SetSwitchesForward();
-        CCR0+=PulseWidth;                       //increment CCR0
+        CCR0+=DeviceData.StimParams.PulseWidth; //increment CCR0
         break;
     case REVERSE:
         SetSwitchesReverse();
-        CCR0+=PulseWidth;
+        CCR0+=DeviceData.StimParams.PulseWidth; //increment CCR0
         break;
     case GROUNDED:
         SetSwitchesGround();
@@ -162,7 +158,8 @@ __interrupt void Timer_A0_ISR(void)
             TA0CCTL0 = ~CCIE;
         }
         else
-            CCR0+=InterPulseInterval - (PulseWidth + PulseWidth);
+            CCR0 += DeviceData.StimParams.Period - \
+               (DeviceData.StimParams.PulseWidth + DeviceData.StimParams.PulseWidth); //increment CCR0
         break;
     case OFF:
     default: // should never reach here
@@ -181,7 +178,7 @@ __interrupt void Timer1_A0_ISR (void)
     TA1CCR0 += 1000;        // 1 ms period
 
     if (--SecondCounter == 0) {
-        Uptime += 1;
+        DeviceData.Status.Uptime += 1;
         SecondCounter = 100;
         if (ProgramState == 0) // If the master loop has gone to sleep then wake it up
             __bic_SR_register_on_exit(LPM1_bits);

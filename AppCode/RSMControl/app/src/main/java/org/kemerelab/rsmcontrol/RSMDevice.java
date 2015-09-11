@@ -2,11 +2,13 @@ package org.kemerelab.rsmcontrol;
 
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.text.style.AlignmentSpan;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.StringTokenizer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -19,7 +21,7 @@ public class RSMDevice implements Parcelable {
 
     public byte stimulationEnabled; // true or false
     public short stimulationWidth; // length of each phase of biphasic pulse in us
-    public Integer deviceID;
+    public byte[] deviceID;
 
     public short stimulationPeriod; // in us
     public short stimulationAmplitude; // in uV
@@ -34,7 +36,8 @@ public class RSMDevice implements Parcelable {
 
 
     public RSMDevice() {
-        deviceID = 0;
+        String deviceIDStr = "ID00";
+        deviceID = deviceIDStr.getBytes(StandardCharsets.UTF_8);
         stimulationEnabled = 0;
         stimulationPeriod = 10000;
         stimulationAmplitude = 0;
@@ -47,7 +50,7 @@ public class RSMDevice implements Parcelable {
     }
 
     public RSMDevice(byte[] data) {
-        deviceID = 0;
+        deviceID = new byte[4];
         stimulationEnabled = 0;
         stimulationPeriod = 10000;
         stimulationAmplitude = 0;
@@ -62,7 +65,7 @@ public class RSMDevice implements Parcelable {
         buf.order(ByteOrder.LITTLE_ENDIAN);
         try {
             commandVersion = buf.get();
-            deviceID = buf.getInt();
+            buf.get(deviceID); // deviceID is size 4!
             stimulationEnabled = buf.get();
             stimulationPeriod = buf.getShort();
             stimulationAmplitude = buf.getShort();
@@ -80,7 +83,7 @@ public class RSMDevice implements Parcelable {
         ByteBuffer buf = ByteBuffer.allocate(18); // hard coded for current data string!
         buf.order(ByteOrder.LITTLE_ENDIAN);
         buf.put((byte) commandVersion);
-        buf.putInt(deviceID);
+        buf.put(deviceID);
         buf.put((byte) stimulationEnabled);
         buf.putShort((short) stimulationPeriod);
         buf.putShort((short) stimulationAmplitude);
@@ -125,7 +128,7 @@ public class RSMDevice implements Parcelable {
     }
 
     public void writeToParcel(Parcel out, int flags) {
-        out.writeInt(deviceID);
+        out.writeByteArray(deviceID);
         out.writeByte(stimulationEnabled);
         out.writeInt(stimulationPeriod);
         out.writeInt(stimulationAmplitude);
@@ -149,7 +152,7 @@ public class RSMDevice implements Parcelable {
         batteryVoltage = -1;
         isValid = false;
 
-        deviceID = in.readInt();
+        in.readByteArray(deviceID);
         stimulationEnabled = in.readByte();
         stimulationPeriod = (short) in.readInt();
         stimulationAmplitude = (short) in.readInt();

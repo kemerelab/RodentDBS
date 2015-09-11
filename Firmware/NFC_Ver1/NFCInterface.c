@@ -59,25 +59,19 @@ struct I2C_NDEF_FullRecord NDEF_Data = { \
         .ND.CapContainer.TLV.MaxFileSize = {0x0B, 0xDF}, \
         .ND.CapContainer.TLV.ReadAccess = 0x00, \
         .ND.CapContainer.TLV.WriteAccess = 0x00, \
-        .ND.NDEFRecord.FileID = {0xE1, 0x04}, \
-        .ND.NDEFRecord.NLen = {0x00, 3 + \
+        .ND.RecordHeader.FileID = {0xE1, 0x04}, \
+        .ND.RecordHeader.NLen = {0x00, 3 + \
                 sizeof(EXTERNAL_RECORD_TYPE_NAME) - 1 + \
-                sizeof(PROTOCOL_STR) - 1}, \
-        .ND.NDEFRecord.Flags = 0xD4,\
-        .ND.NDEFRecord.RecordTypeLength = sizeof(EXTERNAL_RECORD_TYPE_NAME) - 1, \
-        .ND.NDEFRecord.PayloadLength = sizeof(PROTOCOL_STR) - 1, \
-        .ND.NDEFRecord.TypeName = EXTERNAL_RECORD_TYPE_NAME, \
-        /*.ND.NDEFRecord.NLen = {0x00, 8//7? + sizeof(PROTOCOL_STR) - 1}, \
-        .ND.NDEFRecord.Flags = 0xD1,\
-        .ND.NDEFRecord.RecordTypeLength = 0x01, \
-        .ND.NDEFRecord.PayloadLength = 4 + sizeof(PROTOCOL_STR) - 1, \
-        .ND.NDEFRecord.Type = 0x54, \
-        .ND.NDEFRecord.StatusByte = 0x02, \
-        .ND.NDEFRecord.Language = {0x65, 0x6E},  \ */
-        .ND.NDEFRecord.BinaryMessage = PROTOCOL_STR \
+                sizeof(DeviceData_t)}, \
+        .ND.RecordHeader.Flags = 0xD4,\
+        .ND.RecordHeader.RecordTypeLength = sizeof(EXTERNAL_RECORD_TYPE_NAME) - 1, \
+        .ND.RecordHeader.PayloadLength = sizeof(DeviceData_t), \
+        .ND.RecordHeader.TypeName = EXTERNAL_RECORD_TYPE_NAME, \
 };
 
-unsigned char uptimeStr_I2C[] = {0x00, UPTIME_DPTR, '\x7F','\xFF', '\xFF','\xFF'};
+
+#define STATUS_START EXTERNAL_RECORD_DATA_START + sizeof(DeviceID_t) + sizeof(StimParams_t)
+unsigned char statusString_I2C[sizeof(DeviceStatus_t)] = {0x00, STATUS_START};
 
 void NFCInterfaceSetup(void) {
     // Reset the RF430 using its reset pin. Normally on power up this wouldn't be necessary,
@@ -126,7 +120,8 @@ void NFCInterfaceSetup(void) {
     }
 
     //write NDEF memory with full Capability Container + NDEF message
-    WriteContinuous_I2C(RF430_ADDRESS, (unsigned char *)(&NDEF_Data), sizeof(NDEF_Data)-1);
+    memcpy(&(NDEF_Data.ND.BinaryMessage), &DeviceData, sizeof(DeviceData));
+    WriteContinuous_I2C(RF430_ADDRESS, (unsigned char *)(&NDEF_Data), sizeof(NDEF_Data));
     WriteRegister_WordAddress(RF430_ADDRESS, CONTROL_REG, RF_ENABLE);
 }
 
@@ -155,7 +150,7 @@ inline void DoubleWordToHexString(uint32_t x, unsigned char *x_e) {
 }
 
 void UpdateNFC(void) {
-    static unsigned char *uptimeString = uptimeStr_I2C + 2;
+    static unsigned char *uptimeString = statusString_I2C + 2;
 
     if ((ReadRegister_WordAddress(RF430_ADDRESS, STATUS_REG) & (READY | RF_BUSY | CRC_ACTIVE)) != READY) {
         return;
@@ -163,8 +158,8 @@ void UpdateNFC(void) {
     else {
         WriteRegister_WordAddress(RF430_ADDRESS, CONTROL_REG, 0x00); // Disable RF
         //WordToHexString((uint16_t) Uptime, uptimeString + 8);
-        memcpy(uptimeString, &Uptime, sizeof(Uptime));
-        WriteContinuous_I2C(RF430_ADDRESS, uptimeStr_I2C, sizeof(uptimeStr_I2C));
+        memcpy(uptimeString, &(DeviceData.Status), sizeof(DeviceStatus_t));
+        WriteContinuous_I2C(RF430_ADDRESS, statusString_I2C, sizeof(statusString_I2C));
         WriteRegister_WordAddress(RF430_ADDRESS, CONTROL_REG, RF_ENABLE);
     }
 }

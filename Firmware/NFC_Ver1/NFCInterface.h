@@ -117,67 +117,56 @@ struct __attribute__((__packed__)) TLV {
     unsigned char WriteAccess;
 };
 
-struct __attribute__((__packed__)) CapabilityContainer {
+typedef struct __attribute__((__packed__)) CapabilityContainer {
     unsigned char FileID[2];
     unsigned char Len[2];
     unsigned char MappingVersion;
     unsigned char MLe[2];
     unsigned char MLc[2];
     struct __attribute__((__packed__)) TLV TLV;
-};
+} CapabilityContainer;
 
-struct __attribute__((__packed__)) NDEFTextRecord {
+typedef struct __attribute__((__packed__)) NDEFTextRecordHeader {
     unsigned char FileID[2];
-    unsigned char NLen[2];
-    unsigned char Flags;
-    unsigned char RecordTypeLength;
-    unsigned char PayloadLength;
+    unsigned char NLen[2]; // {0x00, 8//7? + sizeof(DATA_STR) - 1}
+    unsigned char Flags; // 0xD1
+    unsigned char RecordTypeLength; // 0x01
+    unsigned char PayloadLength;  // 4 + sizeof(DATA_STR) - 1
     unsigned char Type; // 0x54 = "T"
-    unsigned char StatusByte;
+    unsigned char StatusByte; // 0x02
     unsigned char Language[2]; /*{0x65, 0x6E} = 'e','n'*/
-    unsigned char TextMessage[255];
-};
+} TextRecordHeader;
 
 typedef struct __attribute__((__packed__)) NDEF_TextRecord_t {
     unsigned char TagApplicationName[7];
-    struct __attribute__((__packed__)) CapabilityContainer CapContainer; // 17 bytes
-    struct __attribute__((__packed__)) NDEFTextRecord NDEFRecord; // header is 11 bytes
+    CapabilityContainer CapContainer; // 17 bytes
+    TextRecordHeader RecordHeader; // header is 11 bytes
+    unsigned char TextMessage[255];
 } NDEF_TextRecord_t;
 
+#define TEXT_RECORD_DATA_START  7 + sizeof(CapabailityContainer)  + \
+    sizeof(TextRecordHeader)
+//#define DATA_START  35 // - for TextRecord
 
-struct __attribute__((__packed__)) NDEFUnknownRecord {
-    unsigned char FileID[2];
-    unsigned char NLen[2];
-    unsigned char Flags; // MB=1,ME=1,CF=0,SR=1,IL=0,TNF=0x05 => 0xD5
-    unsigned char RecordTypeLength; // must be zero!
-    unsigned char PayloadLength;
-    unsigned char BinaryMessage[255];
-};
-
-typedef struct __attribute__((__packed__)) NDEF_UnknownRecord_t {
-    unsigned char TagApplicationName[7];
-    struct __attribute__((__packed__)) CapabilityContainer CapContainer; // 17 bytes
-    struct __attribute__((__packed__)) NDEFUnknownRecord NDEFRecord; // header is 7 bytes
-} NDEF_UnknownRecord_t;
 
 #define DOMAIN "rnel.rice.edu"
 #define DATA_TYPE_NAME "rsm"
 #define EXTERNAL_RECORD_TYPE_NAME DOMAIN ":" DATA_TYPE_NAME
 
-struct __attribute__((__packed__)) NDEFExternalRecord {
+typedef struct __attribute__((__packed__)) NDEFExternalRecordHeader_t {
     unsigned char FileID[2];
     unsigned char NLen[2];
     unsigned char Flags; // MB=1,ME=1,CF=0,SR=1,IL=0,TNF=0x04 => 0xD4
     unsigned char RecordTypeLength; // length of type name
     unsigned char PayloadLength;
     unsigned char TypeName[sizeof(EXTERNAL_RECORD_TYPE_NAME)-1]; // rnel.rice.edu:rsm
-    unsigned char BinaryMessage[255];
-};
+} ExternalRecordHeader;
 
 typedef struct __attribute__((__packed__)) NDEF_ExternalRecord_t {
     unsigned char TagApplicationName[7];
-    struct __attribute__((__packed__)) CapabilityContainer CapContainer; // 17 bytes
-    struct __attribute__((__packed__)) NDEFExternalRecord NDEFRecord; // header depends on string sizes bytes
+    CapabilityContainer CapContainer; // 17 bytes
+    ExternalRecordHeader RecordHeader; // header depends on string sizes bytes
+    unsigned char BinaryMessage[255];
 } NDEF_ExternalRecord_t;
 
 struct __attribute__((__packed__)) I2C_NDEF_FullRecord {
@@ -185,28 +174,8 @@ struct __attribute__((__packed__)) I2C_NDEF_FullRecord {
     NDEF_ExternalRecord_t ND;
 };
 
-//#define DATA_START  31 // - for UnknownRecord
-//#define DATA_START  35 // - for TextRecord
-
-#define EXTERNAL_RECORD_DATA_START  31 + sizeof(EXTERNAL_RECORD_TYPE_NAME) - 1 // - for UnknownRecord
-
-
-#define SEP "\n"
-#define VERSION_STR "\x02"
-#define ID_STR "ABCD"
-#define CONTROL_FMT "State[8b]Period[16b]Amplitude[16b]PulseWidth[16b]" SEP
-#define STATUS_FMT "BatteryVoltage[16b]UpTime[32b]" SEP
-#define STATE_CONTROL_RAW "Y"
-#define PERIOD_RAW "\x4C\x1D"
-#define AMP_RAW "\x50\x00"
-#define PW_RAW "\x3C\x00"
-#define BAT_RAW "\xE1\x00"
-#define UPTIME_RAW "\x00\x00\x00\x00"
-//#define PROTOCOL_STR VERSION_STR ID_STR CONTROL_FMT STATUS_FMT STATE_CONTROL_RAW PERIOD_RAW AMP_RAW PW_RAW BAT_RAW UPTIME_RAW SEP
-#define PROTOCOL_STR VERSION_STR ID_STR STATE_CONTROL_RAW PERIOD_RAW AMP_RAW PW_RAW BAT_RAW UPTIME_RAW
-
-
-#define UPTIME_DPTR EXTERNAL_RECORD_DATA_START + (sizeof(PROTOCOL_STR) - 1 - 4)
+#define EXTERNAL_RECORD_DATA_START  7 + sizeof(CapabilityContainer)  + \
+    sizeof(ExternalRecordHeader) // - for UnknownRecord
 
 void NFCInterfaceSetup(void);
 void UpdateNFC(void);
