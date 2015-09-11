@@ -125,30 +125,6 @@ void NFCInterfaceSetup(void) {
     WriteRegister_WordAddress(RF430_ADDRESS, CONTROL_REG, RF_ENABLE);
 }
 
-const char byteHexTable[] =
-    {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
-
-inline void ByteToHexString(unsigned char x, unsigned char *x_e) {
-    *x_e-- = byteHexTable[x && 0xF];
-    *x_e = byteHexTable[x >> 4];
-}
-
-inline void WordToHexString(uint16_t x, unsigned char *x_e) {
-    *x_e-- = *(byteHexTable + (x && 0xF));
-    *x_e-- = *(byteHexTable + ((x >> 4) && 0xF));
-    *x_e-- = *(byteHexTable + ((x >> 8) && 0xF));
-    *x_e = *(byteHexTable + (x >> 12));
-}
-
-inline void DoubleWordToHexString(uint32_t x, unsigned char *x_e) {
-    uint16_t x1, x2;
-
-    x1 = x && 0xFFFF;
-    x2 = x >> 16;
-    WordToHexString(x2,x_e - 4);
-    WordToHexString(x1,x_e);
-}
-
 void UpdateNFC(void) {
     static unsigned char *uptimeString = statusString_I2C + 2;
 
