@@ -169,6 +169,31 @@
                     android:layout_height="match_parent">
 
                     <TextView
+                        android:text="@string/uptimeLabel"
+                        android:gravity="right"
+                        android:id="@+id/uptimeCaption" />
+
+                    <TextView
+                        style="@android:style/Widget.EditText"
+                        android:layout_width="wrap_content"
+                        android:id="@+id/uptimeText"
+                        android:gravity="right"
+                        android:textStyle="italic"/>
+
+                    <TextView
+                        android:text="  "
+                        android:id="@+id/spaces2"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+
+                </TableRow>
+
+                <TableRow
+                    android:gravity="center_horizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <TextView
                         android:text="@string/lastUpdateLabel"
                         android:gravity="right"
                         android:id="@+id/lastUpdateCaption" />
@@ -178,30 +203,6 @@
                         android:id="@+id/lastUpdateText"
                         android:layout_width="wrap_content"
                         android:inputType="none"
-                        android:gravity="right"
-                        android:textStyle="italic"/>
-
-                    <TextView
-                        android:text="s"
-                        android:id="@+id/secondUnit"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content" />
-                </TableRow>
-
-                <TableRow
-                    android:gravity="center_horizontal"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent">
-
-                    <TextView
-                        android:text="@string/uptimeLabel"
-                        android:gravity="right"
-                        android:id="@+id/uptimeCaption" />
-
-                    <TextView
-                        style="@android:style/Widget.EditText"
-                        android:layout_width="wrap_content"
-                        android:id="@+id/uptimeText"
                         android:gravity="right"
                         android:textStyle="italic"/>
 
@@ -235,6 +236,8 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content" />
                 </TableRow>
+
+
 
             </TableLayout>
         </ScrollView>
