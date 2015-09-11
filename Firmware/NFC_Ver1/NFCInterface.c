@@ -69,9 +69,8 @@ struct I2C_NDEF_FullRecord NDEF_Data = { \
         .ND.RecordHeader.TypeName = EXTERNAL_RECORD_TYPE_NAME, \
 };
 
+unsigned char statusString_I2C[2 + sizeof(DeviceStatus_t)] = {0x00, STATUS_START};
 
-#define STATUS_START EXTERNAL_RECORD_DATA_START + sizeof(DeviceID_t) + sizeof(StimParams_t)
-unsigned char statusString_I2C[sizeof(DeviceStatus_t)] = {0x00, STATUS_START};
 
 void NFCInterfaceSetup(void) {
     // Reset the RF430 using its reset pin. Normally on power up this wouldn't be necessary,
@@ -97,9 +96,6 @@ void NFCInterfaceSetup(void) {
         version = ReadRegister_WordAddress(RF430_ADDRESS, VERSION_REG);  // read the version register.  The fix changes based on what version of the
                                                // RF430 is being used.  Version C and D have the issue.  Next versions are
                                                // expected to have this issue corrected Ver C = 0x01, Ver D = 0x02
-
-
-
         if (version == 0x01 || version == 0x02)
         {   // the issue exists in these two versions
             WriteRegister_WordAddress(RF430_ADDRESS, 0xFFE0, 0x004E);
@@ -120,7 +116,7 @@ void NFCInterfaceSetup(void) {
     }
 
     //write NDEF memory with full Capability Container + NDEF message
-    memcpy(&(NDEF_Data.ND.BinaryMessage), &DeviceData, sizeof(DeviceData));
+    memcpy(&(NDEF_Data.ND.BinaryMessage), (unsigned char *)&DeviceData, sizeof(DeviceData));
     WriteContinuous_I2C(RF430_ADDRESS, (unsigned char *)(&NDEF_Data), sizeof(NDEF_Data));
     WriteRegister_WordAddress(RF430_ADDRESS, CONTROL_REG, RF_ENABLE);
 }
@@ -134,7 +130,7 @@ void UpdateNFC(void) {
     else {
         WriteRegister_WordAddress(RF430_ADDRESS, CONTROL_REG, 0x00); // Disable RF
         //WordToHexString((uint16_t) Uptime, uptimeString + 8);
-        memcpy(uptimeString, &(DeviceData.Status), sizeof(DeviceStatus_t));
+        memcpy(uptimeString, (unsigned char *)&(DeviceData.Status), sizeof(DeviceStatus_t));
         WriteContinuous_I2C(RF430_ADDRESS, statusString_I2C, sizeof(statusString_I2C));
         WriteRegister_WordAddress(RF430_ADDRESS, CONTROL_REG, RF_ENABLE);
     }
