@@ -126,29 +126,6 @@ typedef struct __attribute__((__packed__)) CapabilityContainer {
     struct __attribute__((__packed__)) TLV TLV;
 } CapabilityContainer;
 
-typedef struct __attribute__((__packed__)) NDEFTextRecordHeader {
-    unsigned char FileID[2];
-    unsigned char NLen[2]; // {0x00, 8//7? + sizeof(DATA_STR) - 1}
-    unsigned char Flags; // 0xD1
-    unsigned char RecordTypeLength; // 0x01
-    unsigned char PayloadLength;  // 4 + sizeof(DATA_STR) - 1
-    unsigned char Type; // 0x54 = "T"
-    unsigned char StatusByte; // 0x02
-    unsigned char Language[2]; /*{0x65, 0x6E} = 'e','n'*/
-} TextRecordHeader;
-
-typedef struct __attribute__((__packed__)) NDEF_TextRecord_t {
-    unsigned char TagApplicationName[7];
-    CapabilityContainer CapContainer; // 17 bytes
-    TextRecordHeader RecordHeader; // header is 11 bytes
-    unsigned char TextMessage[255];
-} NDEF_TextRecord_t;
-
-#define TEXT_RECORD_DATA_START  7 + sizeof(CapabailityContainer)  + \
-    sizeof(TextRecordHeader)
-//#define DATA_START  35 // - for TextRecord
-
-
 #define DOMAIN "rnel.rice.edu"
 #define DATA_TYPE_NAME "rsm"
 #define EXTERNAL_RECORD_TYPE_NAME DOMAIN ":" DATA_TYPE_NAME
