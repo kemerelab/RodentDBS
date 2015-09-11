@@ -50,23 +50,27 @@
 
 inline void I2CSetup (void);
 
+// initialize I2C system for communicating with a different slave
+inline void InitializeI2CSlave(unsigned char slave_addr);
+
 //writes a byte string to I2C slave_addr of length data_length
-void WriteContinuous_I2C(unsigned char slave_addr, const unsigned char* write_data, unsigned int data_length);
+void WriteContinuous_I2C(const unsigned char* write_data, unsigned int data_length);
 
 // Write a byte to a register with a 2 byte address
-void WriteRegister_WordAddress(unsigned char slave_addr, uint16_t reg_addr, uint16_t reg_value);
+void WriteRegister_WordAddress(uint16_t reg_addr, uint16_t reg_value);
 
 // Write a byte to a register with a 1 byte address
-void WriteRegister_ByteAddress(unsigned char slave_addr, unsigned char reg_addr, unsigned char reg_value);
-
-// Read a byte from a register with a 2 byte address
-unsigned char ReadRegister_WordAddress(unsigned char slave_addr, uint16_t reg_addr);
-
-// Read a byte from a register with a 1 byte address
-unsigned char ReadRegister_ByteAddress(unsigned char slave_addr, unsigned char reg_addr);
+void WriteRegister_ByteAddress(unsigned char reg_addr, unsigned char reg_value);
 
 // Read a series of bytes from a memory starting at a 2 byte address
-void ReadMemory_WordAddress(unsigned char slave_addr, uint16_t reg_addr, unsigned char* data, int byte_count);
+void ReadMemory_WordAddress(uint16_t reg_addr, unsigned char* data, int byte_count);
+
+// Read a byte from a register with a 2 byte address
+unsigned char ReadRegister_WordAddress(uint16_t reg_addr);
+
+// Read a byte from a register with a 1 byte address
+unsigned char ReadRegister_ByteAddress(unsigned char reg_addr);
+
 
 #endif
 

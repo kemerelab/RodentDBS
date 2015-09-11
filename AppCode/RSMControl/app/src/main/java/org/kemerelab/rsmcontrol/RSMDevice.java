@@ -72,6 +72,7 @@ public class RSMDevice implements Parcelable {
             stimulationWidth = buf.getShort();
             batteryVoltage = buf.getShort();
             uptime = buf.getInt();
+            lastUpdate = buf.getInt();
             isValid = true;
         } catch (Exception e) {
             e.printStackTrace(); // buffer underflow, for e.g.
@@ -80,7 +81,8 @@ public class RSMDevice implements Parcelable {
 
 
     public byte[] getDeviceInfoAsByteArray() {
-        ByteBuffer buf = ByteBuffer.allocate(18); // hard coded for current data string!
+        ByteBuffer buf = ByteBuffer.allocate(22); // hard coded for current data string!
+
         buf.order(ByteOrder.LITTLE_ENDIAN);
         buf.put((byte) commandVersion);
         buf.put(deviceID);
@@ -90,13 +92,19 @@ public class RSMDevice implements Parcelable {
         buf.putShort((short) stimulationWidth);
         buf.putShort((short) 0); // battery voltage will get reset by device
         buf.putInt(0); // uptime will get reset by device
+        buf.putInt(0); // lastUpdate will get reset by device
 
         return buf.array();
     }
 
     public String getLastUpdateString() {
-        if (lastUpdate > 0)
-            return lastUpdate.toString() + " s";
+        if (lastUpdate > 0) {
+            // uptime is in seconds. convert to hr:min:ss
+            Integer hr = lastUpdate / 3600;
+            Integer min = (lastUpdate - hr * 3600) / 60;
+            Integer ss = lastUpdate - hr * 3600 - min * 60;
+            return String.format("%d:%02d:%02d", hr, min, ss);
+        }
         else
             return "no data";
     }

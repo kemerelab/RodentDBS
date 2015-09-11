@@ -53,6 +53,9 @@
 /* Program coordination variables */
 extern volatile unsigned char ProgramState;                         // status variable
 
+#define PROTOCOL_VERSION 3
+#define DEFAULT_DEVICE_IDSTR "NULL"
+
 /* Device ID variables */
 typedef struct __attribute__((__packed__)) DeviceID_t {
     uint8_t firmwareVersion;
@@ -64,7 +67,7 @@ typedef struct __attribute__((__packed__)) DeviceID_t {
 typedef struct __attribute__((__packed__)) DeviceStatus_t {
     uint16_t BatteryVoltage;
     uint32_t Uptime;
-    //extern volatile uint32_t LastUpdate;
+    uint32_t LastUpdate;
 } DeviceStatus_t;
 //extern volatile DeviceStatusVariables_t DeviceStatus;
 
@@ -85,6 +88,8 @@ typedef struct __attribute__((__packed__)) DeviceData_t {
 } DeviceData_t;
 
 extern volatile DeviceData_t DeviceData;
+
+extern volatile uint32_t DeviceMasterClock;
 
 extern volatile uint16_t StimulationPhase;
 extern volatile uint16_t StimParameterMutex;

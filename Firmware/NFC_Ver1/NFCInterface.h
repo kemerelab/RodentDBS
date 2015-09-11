@@ -43,9 +43,9 @@
 #define NFCINTERFACE_H_
 
 #include <msp430.h>
+#include "Firmware.h"
 
 #define RF430_ADDRESS 0x28
-
 
 #define RF430_PORT_OUT P2OUT
 #define RF430_PORT_SEL P2SEL
@@ -109,7 +109,7 @@ typedef struct __attribute__((__packed__)) NDEF_ExternalRecord_t {
     unsigned char TagApplicationName[7];
     CapabilityContainer CapContainer; // 17 bytes
     ExternalRecordHeader RecordHeader; // header depends on string sizes bytes
-    unsigned char BinaryMessage[255];
+    unsigned char BinaryMessage[sizeof(DeviceData_t)];
 } NDEF_ExternalRecord_t;
 
 struct __attribute__((__packed__)) I2C_NDEF_FullRecord {
@@ -124,8 +124,8 @@ struct __attribute__((__packed__)) I2C_NDEF_FullRecord {
 #define STATUS_ADDR STIMPARAMS_ADDR + sizeof(StimParams_t)
 
 
-
 void NFCInterfaceSetup(void);
-void UpdateNFC(void);
+void UpdateDeviceStatus(void);
+void ReadDeviceParams(void);
 
 #endif

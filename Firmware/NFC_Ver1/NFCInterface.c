@@ -44,6 +44,7 @@
 #include "Firmware.h"
 #include "I2C.h"
 #include "stdint.h"
+#include "string.h"
 
 struct I2C_NDEF_FullRecord NDEF_Data = { \
         .MemoryAddress = {0x00, 0x00}, \
@@ -69,9 +70,6 @@ struct I2C_NDEF_FullRecord NDEF_Data = { \
         .ND.RecordHeader.TypeName = EXTERNAL_RECORD_TYPE_NAME, \
 };
 
-unsigned char statusString_I2C[2 + sizeof(DeviceStatus_t)] = {0x00, STATUS_START};
-
-
 void NFCInterfaceSetup(void) {
     // Reset the RF430 using its reset pin. Normally on power up this wouldn't be necessary,
     // but it's good in case something has happened...
@@ -83,9 +81,10 @@ void NFCInterfaceSetup(void) {
     RF430_PORT_OUT |= RF430_RST; // Release the RF430 to on
 
     __delay_cycles(100000);
-    // Should set up interrupt here?
 
-    while(!(ReadRegister_WordAddress(RF430_ADDRESS, STATUS_REG) & READY)); //wait until READY bit has been set
+    InitializeI2CSlave(RF430_ADDRESS);
+
+    while(!(ReadRegister_WordAddress(STATUS_REG) & READY)); //wait until READY bit has been set
     /****************************************************************************/
     /* Errata Fix : Unresponsive RF - recommended firmware                      */
     /****************************************************************************/
@@ -93,46 +92,76 @@ void NFCInterfaceSetup(void) {
         //Please implement this fix as given in this block.  It is important that
         //no line be removed or changed.
         unsigned char version;
-        version = ReadRegister_WordAddress(RF430_ADDRESS, VERSION_REG);  // read the version register.  The fix changes based on what version of the
+        version = ReadRegister_WordAddress(VERSION_REG);  // read the version register.  The fix changes based on what version of the
                                                // RF430 is being used.  Version C and D have the issue.  Next versions are
                                                // expected to have this issue corrected Ver C = 0x01, Ver D = 0x02
         if (version == 0x01 || version == 0x02)
         {   // the issue exists in these two versions
-            WriteRegister_WordAddress(RF430_ADDRESS, 0xFFE0, 0x004E);
-            WriteRegister_WordAddress(RF430_ADDRESS, 0xFFFE, 0x0080);
+            WriteRegister_WordAddress(0xFFE0, 0x004E);
+            WriteRegister_WordAddress(0xFFFE, 0x0080);
             if (version == 0x01)
             {  // Ver C
-                WriteRegister_WordAddress(RF430_ADDRESS, 0x2a98, 0x0650);
+                WriteRegister_WordAddress(0x2a98, 0x0650);
             }
             else
             {   // Ver D
-                WriteRegister_WordAddress(RF430_ADDRESS, 0x2a6e, 0x0650);
+                WriteRegister_WordAddress(0x2a6e, 0x0650);
             }
-            WriteRegister_WordAddress(RF430_ADDRESS, 0x2814, 0);
-            WriteRegister_WordAddress(RF430_ADDRESS, 0x2815, 0); // Is this necessary?
-            WriteRegister_WordAddress(RF430_ADDRESS, 0xFFE0, 0);
+            WriteRegister_WordAddress(0x2814, 0);
+            WriteRegister_WordAddress(0x2815, 0); // Is this necessary?
+            WriteRegister_WordAddress(0xFFE0, 0);
         }
         //Upon exit of this block, the control register is set to 0x0
     }
 
     //write NDEF memory with full Capability Container + NDEF message
     memcpy(&(NDEF_Data.ND.BinaryMessage), (unsigned char *)&DeviceData, sizeof(DeviceData));
-    WriteContinuous_I2C(RF430_ADDRESS, (unsigned char *)(&NDEF_Data), sizeof(NDEF_Data));
-    WriteRegister_WordAddress(RF430_ADDRESS, CONTROL_REG, RF_ENABLE);
+    WriteContinuous_I2C((unsigned char *)(&NDEF_Data), sizeof(NDEF_Data));
+    WriteRegister_WordAddress(CONTROL_REG, RF_ENABLE);
 }
 
-void UpdateNFC(void) {
-    static unsigned char *uptimeString = statusString_I2C + 2;
+void UpdateDeviceStatus(void) {
+    unsigned char statusString_I2C[2 + sizeof(DeviceStatus_t)] = {0x00, STATUS_ADDR};
 
-    if ((ReadRegister_WordAddress(RF430_ADDRESS, STATUS_REG) & (READY | RF_BUSY | CRC_ACTIVE)) != READY) {
+    InitializeI2CSlave(RF430_ADDRESS);
+
+    if ((ReadRegister_WordAddress(STATUS_REG) & (READY | RF_BUSY | CRC_ACTIVE)) != READY) {
         return;
     }
     else {
-        WriteRegister_WordAddress(RF430_ADDRESS, CONTROL_REG, 0x00); // Disable RF
-        //WordToHexString((uint16_t) Uptime, uptimeString + 8);
-        memcpy(uptimeString, (unsigned char *)&(DeviceData.Status), sizeof(DeviceStatus_t));
-        WriteContinuous_I2C(RF430_ADDRESS, statusString_I2C, sizeof(statusString_I2C));
-        WriteRegister_WordAddress(RF430_ADDRESS, CONTROL_REG, RF_ENABLE);
+        WriteRegister_WordAddress(CONTROL_REG, 0x00); // Disable RF
+        DeviceData.Status.Uptime = DeviceMasterClock;
+        memcpy(statusString_I2C+2, (unsigned char *)&(DeviceData.Status), sizeof(DeviceStatus_t));
+        WriteContinuous_I2C(statusString_I2C, sizeof(statusString_I2C));
+        WriteRegister_WordAddress(CONTROL_REG, RF_ENABLE);
     }
 }
 
+void ReadDeviceParams(void) {
+    StimParams_t NewStimParams;
+    char valuesChanged = 1;
+
+    InitializeI2CSlave(RF430_ADDRESS);
+
+    if ((ReadRegister_WordAddress(STATUS_REG) & (READY | RF_BUSY | CRC_ACTIVE)) != READY) {
+        return;
+    }
+    else {
+        WriteRegister_WordAddress(CONTROL_REG, 0x00); // Disable RF
+        __delay_cycles(20);
+        ReadMemory_WordAddress(STIMPARAMS_ADDR, (unsigned char*)&NewStimParams, sizeof(NewStimParams));
+        valuesChanged = memcmp((unsigned char*)&NewStimParams,
+                (unsigned char*)&(DeviceData.StimParams), sizeof(NewStimParams));
+        if (valuesChanged != 0) {
+            DeviceData.StimParams.Enabled = NewStimParams.Enabled;
+            DeviceData.StimParams.Period = NewStimParams.Period;
+            DeviceData.StimParams.Amplitude = NewStimParams.Amplitude;
+            DeviceData.StimParams.PulseWidth = NewStimParams.PulseWidth;
+            DeviceData.Status.LastUpdate = DeviceMasterClock;
+        }
+        __delay_cycles(8000);
+
+        WriteRegister_WordAddress(CONTROL_REG, RF_ENABLE);
+    }
+
+}

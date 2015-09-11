@@ -45,7 +45,10 @@
 #include "I2C.h"
 
 unsigned char* _i2c_tx_data;
-unsigned int _i2c_byte_count;
+unsigned char* _i2c_rx_data;
+unsigned int _i2c_tx_byte_count;
+unsigned int _i2c_rx_byte_count;
+unsigned char _i2c_repeated_start_rx;
 
 inline void I2CSetup (void)
 {
@@ -63,9 +66,14 @@ inline void I2CSetup (void)
     UCB0BR1 = 0;
 }
 
+inline void InitializeI2CSlave(unsigned char slave_addr) {
+    UCB0CTL1 |= UCSWRST;           // Turn off i2c (this was buggy?)
+    UCB0I2CSA = slave_addr;          // Slave Address
+    UCB0CTL1  &= ~UCSWRST;           // Exit SW reset state of I2C
+}
+
 // Write two bytes to a register with a 2 byte address
-inline void WriteRegister_WordAddress(unsigned char slave_addr,
-        uint16_t reg_addr, uint16_t reg_value)
+inline void WriteRegister_WordAddress(uint16_t reg_addr, uint16_t reg_value)
 {
     unsigned char data[4];
     data[0] = reg_addr >> 8;
@@ -73,129 +81,128 @@ inline void WriteRegister_WordAddress(unsigned char slave_addr,
     data[2] = reg_value & 0xFF;
     data[3] = reg_value >> 8;
 
-    WriteContinuous_I2C(slave_addr, data, 4);
+    WriteContinuous_I2C(data, 4);
 }
 
 // Write a byte to a register with a 1 byte address
-void WriteRegister_ByteAddress(unsigned char slave_addr,
-        unsigned char reg_addr, unsigned char reg_value)
+void WriteRegister_ByteAddress(unsigned char reg_addr, unsigned char reg_value)
 {
     unsigned char data[2];
     data[0] = reg_addr;
     data[1] = reg_value;
 
-    WriteContinuous_I2C(slave_addr, data, 2);
+    WriteContinuous_I2C(data, 2);
 }
 
 //writes a byte string to I2C slave_addr of length data_length
-void WriteContinuous_I2C(unsigned char slave_addr,
-        const unsigned char* write_data, unsigned int data_length)
+void WriteContinuous_I2C(const unsigned char* write_data, unsigned int data_length)
 {
-    UCB0I2CSA = slave_addr;          // Slave Address
-    UCB0CTL1  &= ~UCSWRST;           // Exit SW reset state of I2C
+    _i2c_repeated_start_rx = 0;
     IE2 |= UCB0TXIE;                 // Enable TX interrupt
     _i2c_tx_data = write_data;       // TX array start address
-    _i2c_byte_count = data_length;   // Load TX byte counter
+    _i2c_tx_byte_count = data_length;   // Load TX byte counter
     while (UCB0CTL1 & UCTXSTP);      // Ensure stop condition got sent
     UCB0CTL1 |= UCTR + UCTXSTT;      // I2C TX, start condition
     __bis_SR_register(CPUOFF + GIE); // Enter LPM0 w/ interrupts (will stall here
                                             // until all data is TX'd).
     IE2 &= ~UCB0TXIE;                // Disable TX interrupt
-    //UCB0CTL1 |= UCSWRST;           // Turn off i2c (this was buggy?)
 }
 
-//------------------------------------------------------------------------------
-// The USCIAB0TX_ISR is structured such that it can be used to transmit any
-// number of bytes by pre-loading TXByteCtr with the byte count. Also, TXData
-// points to the next byte to transmit.
-//------------------------------------------------------------------------------
-#pragma vector = USCIAB0TX_VECTOR
-__interrupt void USCIAB0TX_ISR(void)
+// Read a series of bytes from a memory starting at a 2 byte address
+void ReadMemory_WordAddress(uint16_t reg_addr,
+        unsigned char* data, int byte_count)
 {
-  if (_i2c_byte_count)                            // Check TX byte counter
-  {
-    UCB0TXBUF = *_i2c_tx_data++;                 // Load TX buffer
-    _i2c_byte_count--;                            // Decrement TX byte counter
-  }
-  else
-  {
-    UCB0CTL1 |= UCTXSTP;                    // I2C stop condition
-    IFG2 &= ~UCB0TXIFG;                     // Clear USCI_B0 TX int flag
-    __bic_SR_register_on_exit(CPUOFF);      // Exit LPM0
-  }
+    unsigned char addr_data[2];
+    addr_data[0] = reg_addr >> 8;
+    addr_data[1] = reg_addr & 0xFF;
+
+    _i2c_repeated_start_rx = 1;
+    _i2c_rx_data = data;              // RX array start address
+    _i2c_rx_byte_count = byte_count;  // Load RX byte counter
+
+    IE2 |= UCB0TXIE;                 // Enable TX interrupt
+    _i2c_tx_data = addr_data;         // TX array start address
+    _i2c_tx_byte_count = 2;           // Load TX byte counter
+    while (UCB0CTL1 & UCTXSTP);      // Ensure stop condition got sent
+    UCB0CTL1 |= UCTR + UCTXSTT;      // I2C TX, start condition
+
+    __bis_SR_register(CPUOFF + GIE); // Enter LPM0 w/ interrupts (will stall here
+                                     //     until all data is TX'd and RX'd).
+    IE2 &= ~UCB0RXIE;                // Disable RX interrupt.
 }
 
-
-//------------------------------------------------------------------------------
-// The USCIAB0TX_ISR is structured such that it can be used to transmit any
-// number of bytes by pre-loading TXByteCtr with the byte count. Also, TXData
-// points to the next byte to transmit.
-//------------------------------------------------------------------------------
 
 // Read a byte from a register with a 2 byte address
-unsigned char ReadRegister_WordAddress(unsigned char slave_addr, uint16_t reg_addr)
+unsigned char ReadRegister_WordAddress(uint16_t reg_addr)
 {
     unsigned char reg_value;
-
-    UCB0I2CSA = slave_addr;    // Slave Address
-    UCB0CTL1  &= ~UCSWRST;
-    UCB0CTL1 |= UCTXSTT + UCTR;     // Start i2c write operation
-    //while(!(UCB0CTL1 & UCTXSTT)); // Assert that start condition was started
-    while((UC0IFG & UCB0TXIFG) == 0); // This signifies successful start condition
-
-    UCB0TXBUF = reg_addr >> 8; // Load the first address byte to i2c data
-    while((UC0IFG & UCB0TXIFG) == 0); // Wait until data is sent
-
-    UCB0TXBUF = reg_addr & 0xFF; // Load the second address byte
-    while((UC0IFG & UCB0TXIFG) == 0); // Wait until data is sent
-
-    UCB0CTL1 &= ~UCTR; // Change to read mode and...
-    UCB0CTL1 |= UCTXSTT;        // set repeated start
-    while(!(UCB0CTL1 & UCTXSTT)); // Assert that start condition was started
-
-    UCB0CTL1 |= UCTXSTP; // Set stop condition - necessary because single byte read
-
-    while((UC0IFG & UCB0RXIFG) == 0); // Wait until data is received
-    reg_value = UCB0RXBUF;
-    UCB0CTL1 |= UCSWRST; // Turn off i2c
-
+    ReadMemory_WordAddress(reg_addr, &reg_value, 2);
     return reg_value;
 }
 
-
-// Read a series of bytes from a memory starting at a 2 byte address
-void ReadMemory_WordAddress(unsigned char slave_addr, uint16_t reg_addr,
-        unsigned char* data, int byte_count)
+/* ------------------------------------------------------------------------------
+ *
+ * The USCIAB0TX_ISR handles both TX and RX interrupts.
+ *   - For TX, a pointer to the data start buffer is loaded into
+ *     _i2c_tx_data, and the number of bytes to be transmitted into
+ *     _i2c_tx_byte_count. The interrupt will return from CPUOFF state
+ *     when transmission is complete.
+ *   - Similarly, for RX, a pointer to the data buffer to be filled
+ *     is loaded into _i2c_rx_buffer, with the count in _i2c_rx_byte_count.
+ *   - The most complex scenario is when a transmitted and repeated start to
+ *     receive is required, for example to read from a specific memory address.
+ *     In this case, both _i2c_tx* and _i2c_rx* must be filled, and the
+ *     _i2c_repeated_start_rx flag set. Note that in this case, the process
+ *     will be started by enabling the TX interrupt and setting the transmit/start
+ *     flags, but that at the end, the RX interrupt needs to be disabled.
+ *
+ * ------------------------------------------------------------------------------ */
+#pragma vector = USCIAB0TX_VECTOR
+__interrupt void USCIAB0TX_ISR(void)
 {
-    unsigned int i;
-
-    UCB0I2CSA = slave_addr;    // Slave Address
-    UCB0CTL1  &= ~UCSWRST;
-    UCB0CTL1 |= UCTXSTT + UCTR;     // Start i2c write operation
-
-    UCB0TXBUF = reg_addr >> 8; // Load the first address byte
-    while(!(UCB0CTL1 & UCTXSTT)); // Assert that start condition was started
-    while((UC0IFG & UCB0TXIFG) == 0); // Wait until data is sent
-    UCB0TXBUF = reg_addr & 0xFF; // Load the second address byte
-    while((UC0IFG & UCB0TXIFG) == 0); // Wait until data is sent
-    UCB0CTL1 &= ~UCTR; // Change to read mode and...
-    UCB0CTL1 |= UCTXSTT;        // set repeated start
-    for (i = 0; i < byte_count; i++) {
-        while(!(UC0IFG & UCB0RXIFG)); // Wait until data is received
-        data[i] = UCB0RXBUF;
+    if (UC0IFG & UCB0TXIFG) {
+      if (_i2c_tx_byte_count) {         // Check TX byte counter
+        UCB0TXBUF = *_i2c_tx_data++;    // Load TX buffer
+        _i2c_tx_byte_count--;           // Decrement TX byte counter
+      }
+      else {
+          if (_i2c_repeated_start_rx == 0) { // Regular TX
+              UCB0CTL1 |= UCTXSTP;           // Got all data, set I2C stop condition
+              IFG2 &= ~UCB0TXIFG;            // Clear USCI_B0 TX int flag
+              __bic_SR_register_on_exit(CPUOFF);    // Exit LPM0
+          }
+          else {                        // Switch to RX with repeated start
+              IE2 &= UCB0TXIE;          // Disable TX interrupt,...
+              IE2 |= UCB0RXIE;          //    enable RX interrupt, ...
+              IFG2 &= ~UCB0TXIFG;       //    clear USCI_B0 TX int flag, ...
+              UCB0CTL1 &= ~UCTR;        //    change to read mode and, ...
+              UCB0CTL1 |= UCTXSTT;      //    set repeated start.
+          }
+      }
     }
-    UCB0CTL1 |= UCTXSTP; // Set stop condition
-    UCB0CTL1 |= UCSWRST; // Turn off i2c
+    else {
+        _i2c_rx_byte_count--;                // Decrement RX byte counter
+        if (_i2c_rx_byte_count) {            // Check RX byte counter
+          *_i2c_rx_data++ = UCB0RXBUF;       // Fill RX buffer
+          if (_i2c_rx_byte_count == 1)       // Second to last bye,
+              UCB0CTL1 |= UCTXSTP;           //    set I2C stop condition.
+        }
+        else {
+          *_i2c_rx_data++ = UCB0RXBUF;       // Load last RX byte
+          __bic_SR_register_on_exit(CPUOFF); // Exit LPM0
+        }
+    }
 }
 
 
+
+
+
 // Read a byte from a register with a 1 byte address
-unsigned char ReadRegister_ByteAddress(unsigned char slave_addr,
-        unsigned char reg_addr)
+unsigned char ReadRegister_ByteAddress(unsigned char reg_addr)
 {
     unsigned char reg_value;
 
-    UCB0I2CSA = slave_addr;    // Slave Address
     UCB0CTL1  &= ~UCSWRST;
     UCB0CTL1 |= UCTXSTT + UCTR;     // Start i2c write operation
 
@@ -209,7 +216,6 @@ unsigned char ReadRegister_ByteAddress(unsigned char slave_addr,
     UCB0CTL1 |= UCTXSTP; // Set stop condition - necessary because single byte read
     while((UC0IFG & UCB0RXIFG) == 0); // Wait until data is received
     reg_value = UCB0RXBUF;
-    UCB0CTL1 |= UCSWRST; // Turn off i2c
 
     return reg_value;
 }

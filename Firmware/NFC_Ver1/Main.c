@@ -60,10 +60,12 @@
 volatile unsigned char ProgramState = 0;      // status variable
 
 volatile DeviceData_t DeviceData = {\
-        .ID.idStr = "ABCD", .ID.firmwareVersion = 2, \
-        .Status.BatteryVoltage = 0, .Status.Uptime = 0, \
+        .ID.idStr = DEFAULT_DEVICE_IDSTR, .ID.firmwareVersion = PROTOCOL_VERSION, \
+        .Status.BatteryVoltage = 0, .Status.Uptime = 0, .Status.LastUpdate = 0,\
         .StimParams.Enabled = 0, .StimParams.Period = 7500, \
         .StimParams.Amplitude = 100, .StimParams.PulseWidth = 60 };
+
+volatile uint32_t DeviceMasterClock;
 
 volatile uint16_t StimulationPhase;
 volatile uint16_t StimParameterMutex;
@@ -87,7 +89,8 @@ void PWM_TA1_Setup(void){
 
 inline void SetOutputCurrent (void) {
     // refer to global Amplitude variable!
-    WriteRegister_ByteAddress(DS4432_ADDRESS,DS4432_CURRENT0_REG_ADDR, 0xF1);
+    InitializeI2CSlave(DS4432_ADDRESS);
+    WriteRegister_ByteAddress(DS4432_CURRENT0_REG_ADDR, 0xF1);
 }
 
 
@@ -125,13 +128,21 @@ void main(void)
 
     //__enable_interrupt();   //global interrupt enable
 
+    DeviceMasterClock = 0;
+
     P1OUT = 1;
 
     while (1) {
         ProgramState = 0;
         __bis_SR_register(LPM1_bits | GIE);        // Enter LPM1 w/ interrupts
         ProgramState = 1;
-        UpdateNFC();
+        UpdateDeviceStatus();
+
+        ProgramState = 0;
+        __bis_SR_register(LPM1_bits | GIE);        // Enter LPM1 w/ interrupts
+        ProgramState = 1;
+        ReadDeviceParams();
+
         if (P1OUT && 0x01)
             P1OUT &= 0xFE;
         else
@@ -178,7 +189,7 @@ __interrupt void Timer1_A0_ISR (void)
     TA1CCR0 += 1000;        // 1 ms period
 
     if (--SecondCounter == 0) {
-        DeviceData.Status.Uptime += 1;
+        DeviceMasterClock += 1;
         SecondCounter = 100;
         if (ProgramState == 0) // If the master loop has gone to sleep then wake it up
             __bic_SR_register_on_exit(LPM1_bits);
