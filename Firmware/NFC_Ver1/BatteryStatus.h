@@ -41,11 +41,7 @@
  * to measure the battery voltage
  *
  * Resources:
- *  - Uses watchdog timer for general program state control
- *  - Uses Timer A0 for stimulation pulse timing
- *  - Uses PWM/Timer A1 module for display light (and Pin 2.5)
  *  - Uses Pins 1.0-1.3 for control of switch array
- *  - Uses Pins 1.6, 1.7 / USCI_A0 for I2C ()
  *
 */
 

@@ -46,12 +46,8 @@
 
 #include "stdint.h"
 
-//LED
-#define PWM_cycle 200
-#define PWM_duty 100
-
 /* Program coordination variables */
-extern volatile unsigned char MainLoopMutex;                         // status variable
+extern volatile unsigned char KernelWakeupFlag;                         // status variable
 
 #define PROTOCOL_VERSION 3
 #define DEFAULT_DEVICE_IDSTR "NULL"
@@ -89,5 +85,6 @@ typedef struct __attribute__((__packed__)) DeviceData_t {
 
 extern volatile DeviceData_t DeviceData;
 extern volatile DeviceStatus_t DeviceStatus;
+
 
 #endif /* FIRMWARE_H_ */

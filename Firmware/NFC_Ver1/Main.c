@@ -55,48 +55,47 @@
 #include "SwitchMatrix.h"
 #include "I2C.h"
 #include "NFCInterface.h"
+#include "CurrentSource.h"
 #include "string.h"
 
 
-/* Program coordination variables */
-volatile unsigned char MainLoopMutex = 0;      // status variable
+// GLOBALS
+volatile uint32_t DeviceMasterClock;
+volatile unsigned char KernelWakeupFlag = 0;
+// This flag locks the main kernel timer from waking up a subprocess that has slept.
 
 volatile DeviceData_t DeviceData = {\
         .ID.idStr = DEFAULT_DEVICE_IDSTR, .ID.firmwareVersion = PROTOCOL_VERSION, \
         .Status.BatteryVoltage = 0, .Status.Uptime = 0, .Status.LastUpdate = 0,\
         .StimParams.Enabled = 0, .StimParams.Period = 7500, \
         .StimParams.Amplitude = 100, .StimParams.PulseWidth = 600 };
-
 volatile DeviceStatus_t DeviceStatus = {.BatteryVoltage = 0, .Uptime = 0, .LastUpdate = 0};
-
-volatile uint32_t DeviceMasterClock;
-
 volatile int StimParamsChanged = 0;
+volatile int PowerLEDIntensity = 50;
 
-unsigned int x=0;
+#define CHECK_BATTERY_PERIOD 2500
+volatile int CheckBatteryCounter = CHECK_BATTERY_PERIOD-1;
+#define READ_NFC_DATA_PERIOD 333
+volatile int ReadNFCDataCounter = READ_NFC_DATA_PERIOD-1;
+#define UPDATE_NFC_DATA_PERIOD 500
+volatile int UpdateNFCDataCounter = UPDATE_NFC_DATA_PERIOD-1;
 
-#define DS4432_ADDRESS 0x48
-#define DS4432_CURRENT0_REG_ADDR 0xF8
 
-void PWM_TA1_Setup(void){
-    TA1CCR0 = PWM_cycle;                //pwm period
-    TA1CCTL2 = OUTMOD_7;        //CCR2 reset/set
-    TA1CCR2 = PWM_duty;         //pwm duty cycle p2.5 brightness
-
-    TA1CTL = TASSEL_1 + MC_1;   //Use ACLK, up till CCR0;
-
+void MasterClockSetup(void){
     P2DIR |= BIT5;          //initialize P2.5
     P2SEL |= BIT5;          //select P2.5 as PWM outputs
+
+    TA1CCR0 = 1000;            // 1 ms period
+    TA1CTL = TASSEL_2 + MC_1;  // SMCLK (1 MHz), up mode, enable interrupt
+    TA1CCTL0 = CCIE;           // CCR0 interrupt enabled
+
+    TA1CCTL2 = OUTMOD_7;           //CCR2 reset/set
+    TA1CCR2 = PowerLEDIntensity;   //pin 2.5 brightness (PWM duty cycle versus TA1CCR0)
 }
 
+inline void Blink(void) {
 
-inline void SetOutputCurrent (void) {
-    // refer to global Amplitude variable!
-    InitializeI2CSlave(DS4432_ADDRESS);
-    WriteRegister_ByteAddress(DS4432_CURRENT0_REG_ADDR, 0xF1);
 }
-
-
 
 void main(void)
 {
@@ -108,9 +107,9 @@ void main(void)
     WDTCTL = WDTPW + WDTHOLD;                 // Stop WDT
 
     // Set up system clocks
-    BCSCTL1 = CALBC1_8MHZ;                  // Set range
-    DCOCTL = CALDCO_8MHZ;                   // Set DCO step + modulation
-    BCSCTL3 |= LFXT1S_2;                     // LFXT1 = VLO
+    BCSCTL1 = CALBC1_8MHZ;   // Set range
+    DCOCTL = CALDCO_8MHZ;    // Set DCO step + modulation
+    BCSCTL3 |= LFXT1S_2;     // LFXT1 = VLO (~12 kHz)
 
     // Default - initialize all ports to output
     P1DIR = 0xFF; P2DIR = 0xFF; P3DIR = 0xFF;
@@ -122,71 +121,85 @@ void main(void)
 
     //SetupSwitchMatrix();
 
-    //PWM_Setup
-    //PWM_TA1_Setup();
-
     NFCInterfaceSetup();
+
+    MasterClockSetup();
 
     //EnableStimulation();
 
-    TA1CCTL0 = CCIE;           // CCR0 interrupt enabled
-    TA1CCR0 = 1000;        // 1 ms period
-    TA1CTL = TASSEL_2 + MC_2;  // SMCLK, upmode
-
     //__enable_interrupt();   //global interrupt enable
 
+
     while (1) {
-        MainLoopMutex = 0;
-        __bis_SR_register(LPM1_bits | GIE);        // Enter LPM1 w/ interrupts
-        MainLoopMutex = 1;
 
-        UpdateDeviceStatus();
-
-        MainLoopMutex = 0;
-        __bis_SR_register(LPM1_bits | GIE);        // Enter LPM1 w/ interrupts
-        MainLoopMutex = 1;
-
-        if (ReadDeviceParams(&NewStimParams) != 0) {
-            StimParamsChanged = memcmp((unsigned char*)&NewStimParams,
-                    (unsigned char*)&(DeviceData.StimParams), sizeof(NewStimParams));
-            if (StimParamsChanged != 0) {
-                DisableStimulation();
-                DeviceData.StimParams.Period = NewStimParams.Period;
-                DeviceData.StimParams.Amplitude = NewStimParams.Amplitude;
-                DeviceData.StimParams.PulseWidth = NewStimParams.PulseWidth;
-                DeviceData.StimParams.Enabled = NewStimParams.Enabled;
-                if (NewStimParams.Enabled != 0) {
-                    P1OUT = 1;
-                    EnableStimulation();
-                }
-                else {
-                    P1OUT = 0;
-                }
-                DeviceStatus.LastUpdate = DeviceStatus.Uptime;
-            }
+        if (CheckBatteryCounter <= 0) {
+            CheckBattery();
+            CheckBatteryCounter = CHECK_BATTERY_PERIOD-1;
         }
 
-        MainLoopMutex = 0;
-        __bis_SR_register(LPM1_bits | GIE);        // Enter LPM1 w/ interrupts
-        MainLoopMutex = 1;
 
-        CheckBattery();
+        KernelWakeupFlag = 0;
+        __bis_SR_register(LPM1_bits | GIE);        // Enter LPM1 w/ interrupts
+        KernelWakeupFlag = 1;
+
+
+        if (ReadNFCDataCounter <= 0 ) {
+            if (ReadDeviceParams(&NewStimParams) != 0) {
+                StimParamsChanged = memcmp((unsigned char*)&NewStimParams,
+                        (unsigned char*)&(DeviceData.StimParams), sizeof(NewStimParams));
+                if (StimParamsChanged != 0) {
+                    DisableStimulation();
+                    DeviceData.StimParams.Period = NewStimParams.Period;
+                    DeviceData.StimParams.Amplitude = NewStimParams.Amplitude;
+                    DeviceData.StimParams.PulseWidth = NewStimParams.PulseWidth;
+                    DeviceData.StimParams.Enabled = NewStimParams.Enabled;
+                    if (NewStimParams.Enabled != 0) {
+                        EnableStimulation();
+                        Blink();
+                    }
+                    DeviceStatus.LastUpdate = DeviceStatus.Uptime;
+                }
+            }
+            ReadNFCDataCounter = READ_NFC_DATA_PERIOD-1;
+        }
+
+
+        KernelWakeupFlag = 0;
+        __bis_SR_register(LPM1_bits | GIE);        // Enter LPM1 w/ interrupts
+        KernelWakeupFlag = 1;
+
+
+        if (UpdateNFCDataCounter <= 0) {
+            UpdateDeviceStatus();
+            UpdateNFCDataCounter = UPDATE_NFC_DATA_PERIOD-1;
+        }
+
+        KernelWakeupFlag = 0;
+        __bis_SR_register(LPM1_bits | GIE);        // Enter LPM1 w/ interrupts
+        KernelWakeupFlag = 1;
     }
 }
 
 
 // Timer A1 interrupt service routine => Assume CCR0 set for 1 ms ticks
 #pragma vector=TIMER1_A0_VECTOR
-__interrupt void Timer1_A0_ISR (void)
+__interrupt void MasterClockISR (void)
 {
-    static unsigned int SecondCounter = 100;
-
-    TA1CCR0 += 1000;        // 1 ms period
+    static unsigned int SecondCounter = 1000;
+   //TA1CCR0 += 1000;        // 1 ms period
 
     if (--SecondCounter == 0) {
         DeviceStatus.Uptime += 1;
-        SecondCounter = 100;
-        if (MainLoopMutex == 0) // If the master loop has gone to sleep then wake it up
-            __bic_SR_register_on_exit(LPM1_bits);
+        SecondCounter = 1000;
     }
+
+    // Timer variables for each subprocess that runs in main loop
+    CheckBatteryCounter--;
+    UpdateNFCDataCounter--;
+    ReadNFCDataCounter--;
+
+    if (KernelWakeupFlag == 0) { // If the master loop has gone to sleep then wake it up
+        __bic_SR_register_on_exit(LPM1_bits);
+    }
+
 }
