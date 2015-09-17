@@ -119,6 +119,13 @@ void main(void)
 
     BatteryStatusSetup();
 
+    /*
+     * It would be good to add error checking here somehow.
+     * Maybe make sure that I2C peripherals are present (I suppose this
+     * requires I2C timeouts!).
+     *
+     */
+
     //SetupSwitchMatrix();
 
     NFCInterfaceSetup();
@@ -151,6 +158,7 @@ void main(void)
                     DisableStimulation();
                     DeviceData.StimParams.Period = NewStimParams.Period;
                     DeviceData.StimParams.Amplitude = NewStimParams.Amplitude;
+                    SetOutputCurrent()
                     DeviceData.StimParams.PulseWidth = NewStimParams.PulseWidth;
                     DeviceData.StimParams.Enabled = NewStimParams.Enabled;
                     if (NewStimParams.Enabled != 0) {
@@ -177,6 +185,9 @@ void main(void)
         KernelWakeupFlag = 0;
         __bis_SR_register(LPM1_bits | GIE);        // Enter LPM1 w/ interrupts
         KernelWakeupFlag = 1;
+
+        // Add heartbeat functionality.
+
     }
 }
 

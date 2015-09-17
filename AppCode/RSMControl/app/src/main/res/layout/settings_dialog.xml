@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Change Settings"
+        android:id="@+id/dialogCaption"
+        android:background="@color/DarkBlue"
+        style="@style/TextAppearance.AppCompat.Title.Inverse"
+        android:paddingTop="15px"
+        android:paddingBottom="15px"
+        android:paddingLeft="15px" />
+
+    <ToggleButton
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textOn="Enabled"
+        android:textOff="Disabled"
+        android:id="@+id/enableStimToggle"
+        android:visibility="gone"
+        android:layout_gravity="center_horizontal" />
+
+    <EditText
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:hint="4 Character Device ID"
+        android:id="@+id/deviceIDEditText"
+        android:paddingLeft="20px"
+        android:visibility="gone"
+        android:maxLength="4"
+        android:layout_gravity="center_horizontal" />
+
+    <NumberPicker
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/stimAmplitudeNumberPicker"
+        android:visibility="gone"
+        android:layout_gravity="center_horizontal" />
+
+    <NumberPicker
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/stimCurrentNumberPicker"
+        android:visibility="gone"
+        android:layout_gravity="center_horizontal" />
+
+    <NumberPicker
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/pulseWidthNumberPicker"
+        android:paddingLeft="20px"
+        android:visibility="gone"
+        android:layout_gravity="center_horizontal" />
+
+</LinearLayout>

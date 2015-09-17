@@ -5,27 +5,33 @@ import org.ndeftools.Record;
 import org.ndeftools.externaltype.ExternalTypeRecord;
 import org.ndeftools.util.activity.NfcReaderActivity;
 
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.text.InputType;
 import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.AdapterView;
 import android.widget.EditText;
+import android.widget.ListView;
 import android.widget.NumberPicker;
 import android.widget.ScrollView;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ToggleButton;
 
 import java.nio.charset.StandardCharsets;
 
 
-public class MainActivity extends NfcReaderActivity {
+public class MainActivity extends NfcReaderActivity implements AdapterView.OnItemClickListener {
 
 
     static final String RSM_DEVICE_STRUCTURE = "rsmDevice";
@@ -55,18 +61,6 @@ public class MainActivity extends NfcReaderActivity {
         }
 
         setContentView(R.layout.activity_main);
-
-        NumberPicker np = (NumberPicker) findViewById(R.id.stimulationFrequencyPicker);
-        np.setMaxValue(200);
-        np.setMinValue(20);
-
-        np = (NumberPicker) findViewById(R.id.stimulationAmplitudePicker);
-        np.setMaxValue(100);
-        np.setMinValue(0);
-
-        np = (NumberPicker) findViewById(R.id.stimulationPulseWidthPicker);
-        np.setMaxValue(100);
-        np.setMinValue(30);
 
         updateStatus(nfcAvalability);
         updateDeviceDisplay();
@@ -101,6 +95,10 @@ public class MainActivity extends NfcReaderActivity {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
+
+            Intent intent = new Intent(this, SettingsActivity.class);
+            startActivity(intent);
+
             return true;
         }
 
@@ -116,10 +114,10 @@ public class MainActivity extends NfcReaderActivity {
 
     public void onEnableSwitchToggled (View view) {
         if (((Switch) view).isChecked()) {
-            rsmDevice.stimulationEnabled = 1;
+            rsmDevice.enableStimulation();
         }
         else {
-            rsmDevice.stimulationEnabled = 0;
+            rsmDevice.disableStimulation();
         }
     }
 
@@ -143,11 +141,12 @@ public class MainActivity extends NfcReaderActivity {
         updateRSMDeviceValues();
         Intent intent = new Intent(this, NFCWriteActivity.class);
         intent.putExtra(NDEF_DATA_TO_BE_WRITTEN, rsmDevice.getDeviceInfoAsByteArray());
+        intent.putExtra(RSM_DEVICE_STRUCTURE, rsmDevice);
         startActivity(intent);
     }
 
     public void updateDeviceInfoEditState() {
-        ScrollView s = (ScrollView) findViewById(R.id.deviceView);
+        ListView s = (ListView) findViewById(R.id.deviceInfoListView);
         if (!editingDeviceInfo) {
             switch (nfcAvalability) {
                 case AVAILABLE_ENABLED:
@@ -159,61 +158,13 @@ public class MainActivity extends NfcReaderActivity {
                     s.setBackgroundColor(getResources().getColor(R.color.BackgroundLightRed));
                     break;
             }
-            EditText t = (EditText) findViewById(R.id.deviceIDText);
-            t.setInputType(InputType.TYPE_NULL);
-
-            Switch sw = (Switch) findViewById(R.id.enableStimSwitch);
-            sw.setEnabled(false);
-
-            NumberPicker np = (NumberPicker) findViewById(R.id.stimulationFrequencyPicker);
-            np.setEnabled(false);
-
-            np = (NumberPicker) findViewById(R.id.stimulationAmplitudePicker);
-            np.setEnabled(false);
-
-            np = (NumberPicker) findViewById(R.id.stimulationPulseWidthPicker);
-            np.setEnabled(false);
-
-        }
+       }
         else {
             s.setBackgroundColor(Color.WHITE);
-            EditText t = (EditText) findViewById(R.id.deviceIDText);
-            t.setInputType(InputType.TYPE_CLASS_TEXT);
-
-            Switch sw = (Switch) findViewById(R.id.enableStimSwitch);
-            sw.setEnabled(true);
-
-            NumberPicker np = (NumberPicker) findViewById(R.id.stimulationFrequencyPicker);
-            np.setEnabled(true);
-
-            np = (NumberPicker) findViewById(R.id.stimulationAmplitudePicker);
-            np.setEnabled(true);
-
-            np = (NumberPicker) findViewById(R.id.stimulationPulseWidthPicker);
-            np.setEnabled(true);
         }
     }
 
     public void updateRSMDeviceValues() {
-        EditText t = (EditText) findViewById(R.id.deviceIDText);
-        rsmDevice.deviceID = t.getText().toString().getBytes(StandardCharsets.UTF_8);
-
-        Switch s = (Switch) findViewById(R.id.enableStimSwitch);
-        if (s.isChecked())
-            rsmDevice.stimulationEnabled = 1;
-        else
-            rsmDevice.stimulationEnabled = 0;
-
-
-        NumberPicker np = (NumberPicker) findViewById(R.id.stimulationFrequencyPicker);
-        short period = (short) ((int) 1000000 / (int) np.getValue());
-        rsmDevice.stimulationPeriod = period;
-
-        np = (NumberPicker) findViewById(R.id.stimulationAmplitudePicker);
-        rsmDevice.stimulationAmplitude = (short) np.getValue();
-
-        np = (NumberPicker) findViewById(R.id.stimulationPulseWidthPicker);
-        rsmDevice.stimulationWidth = (short) np.getValue();
     }
 
 
@@ -227,11 +178,11 @@ public class MainActivity extends NfcReaderActivity {
                     break;
                 case AVAILABLE_NOT_ENABLED:
                     t.setText(getString(R.string.nfcAvailableDisabled));
-                    t.setTextColor(R.color.LightRed);
+                    t.setTextColor(getResources().getColor(R.color.LightRed));
                     break;
                 case AVAILABLE_ENABLED:
                     t.setText(getString(R.string.nfcAvailableEnabled));
-                    t.setTextColor(R.color.LightGreen);
+                    t.setTextColor(getResources().getColor(R.color.DarkBlue));
                     break;
                 default:
                     t.setText("Unknown state");
@@ -244,44 +195,117 @@ public class MainActivity extends NfcReaderActivity {
         TextView t = (TextView) findViewById(R.id.statusTextView);
         if ( t!= null) {
             t.setText(getString(R.string.nfcAvailableEnabled));
-            t.setTextColor(R.color.LightBlue);
+            t.setTextColor(getResources().getColor(R.color.LightBlue));
         }
         ScrollView s = (ScrollView) findViewById(R.id.deviceView);
         if (s != null)
-            s.setBackgroundColor(R.color.BackgroundLightRed);
+            s.setBackgroundColor(getResources().getColor(R.color.BackgroundLightRed));
     }
+
+
 
     public void updateDeviceDisplay() {
-        EditText t = (EditText) findViewById(R.id.deviceIDText);
-        if (t != null)
-            t.setText(new String(rsmDevice.deviceID), TextView.BufferType.EDITABLE);
-
-        Switch s = (Switch) findViewById(R.id.enableStimSwitch);
-        s.setChecked(rsmDevice.stimulationEnabled != 0);
-
-
-        NumberPicker np = (NumberPicker) findViewById(R.id.stimulationFrequencyPicker);
-        int freq = 0;
-        if (rsmDevice.stimulationPeriod > 0) {
-            freq = 1000000 / rsmDevice.stimulationPeriod;
-        }
-        np.setValue(freq);
-
-        np = (NumberPicker) findViewById(R.id.stimulationAmplitudePicker);
-        np.setValue(rsmDevice.stimulationAmplitude);
-
-        np = (NumberPicker) findViewById(R.id.stimulationPulseWidthPicker);
-        np.setValue(rsmDevice.stimulationWidth);
-
-        TextView t2 = (TextView) findViewById(R.id.lastUpdateText);
-        t2.setText(rsmDevice.getLastUpdateString(), TextView.BufferType.EDITABLE);
-
-        t2 = (TextView) findViewById(R.id.uptimeText);
-        t2.setText(rsmDevice.getUptimeString(), TextView.BufferType.EDITABLE);
-
-        t2 = (TextView) findViewById(R.id.batteryVoltageText);
-        t2.setText(rsmDevice.getBatteryVoltageString(), TextView.BufferType.EDITABLE);
+        ListView lv = (ListView) findViewById(R.id.deviceInfoListView);
+        RSMDeviceInfoListAdapter devAdapter = new RSMDeviceInfoListAdapter(this,
+                rsmDevice.getDeviceInfoList(this));
+        lv.setAdapter(devAdapter);
+        lv.setOnItemClickListener(this);
     }
+
+    @Override
+    public void onItemClick(AdapterView<?> adapter, View view, int position,
+                            long id) {
+        RSMDeviceInfoAtom atom = (RSMDeviceInfoAtom) adapter.getItemAtPosition(position);
+        if (!editingDeviceInfo) {
+            return;
+        }
+
+        if (atom.settingsType != RSMDevice.UserSettings.NA) {
+
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            // Get the layout inflater
+            final RSMDevice.UserSettings ws = atom.settingsType;
+            LayoutInflater inflater = this.getLayoutInflater();
+
+            // Inflate and set the layout for the dialog
+
+            View v = inflater.inflate(R.layout.settings_dialog, null);
+            final ToggleButton enBut = (ToggleButton) v.findViewById(R.id.enableStimToggle);
+            final NumberPicker amp = (NumberPicker) v.findViewById(R.id.stimAmplitudeNumberPicker);
+            final NumberPicker freq = (NumberPicker) v.findViewById(R.id.stimCurrentNumberPicker);
+            final NumberPicker pulWid = (NumberPicker) v.findViewById(R.id.pulseWidthNumberPicker);
+            final EditText devId = (EditText) v.findViewById(R.id.deviceIDEditText);
+
+            switch (ws) {
+                case ENABLE_STIMULATION:
+                    enBut.setVisibility(View.VISIBLE);
+                    break;
+                case AMPLITUDE:
+                    amp.setMaxValue((int) rsmDevice.getMaxAmplitude());
+                    amp.setMinValue(0);
+                    amp.setValue(Integer.parseInt(rsmDevice.getAmplitudeString()));
+                    amp.setVisibility(View.VISIBLE);
+                    break;
+                case FREQUENCY:
+                    freq.setMaxValue((int) 200);
+                    freq.setMinValue((int) rsmDevice.getMinFrequency());
+                    freq.setValue(Integer.parseInt(rsmDevice.getStimFrequencyString()));
+                    freq.setVisibility(View.VISIBLE);
+                    break;
+                case PULSE_WIDTH:
+                    pulWid.setMaxValue(100);
+                    pulWid.setMinValue(20);
+                    pulWid.setValue(rsmDevice.getPulseWidth());
+                    pulWid.setVisibility(View.VISIBLE);
+                    break;
+                case DEVICE_ID:
+                    devId.setVisibility(View.VISIBLE);
+                    break;
+                case NA:
+                default:
+                    break;
+
+            }
+
+            // Pass null as the parent view because its going in the dialog layout
+            builder.setView(v)
+                    // Add action buttons
+                    .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int id) {
+
+                            switch (ws) {
+                                case ENABLE_STIMULATION:
+                                    rsmDevice.setStimulationEnabled(enBut.isActivated());
+                                    enBut.setVisibility(View.VISIBLE);
+                                    break;
+                                case AMPLITUDE:
+                                    rsmDevice.setStimCurrent(amp.getValue());
+                                    break;
+                                case FREQUENCY:
+                                    rsmDevice.setStimPeriod(freq.getValue());
+                                    break;
+                                case PULSE_WIDTH:
+                                    rsmDevice.setPulseWidth((short) pulWid.getValue());
+                                    break;
+                                case DEVICE_ID:
+                                    rsmDevice.setDeviceID(devId.getText().toString());
+                                    break;
+                                case NA:
+                                default:
+                                    break;
+
+                            }
+                            updateDeviceDisplay();
+                        }
+                    })
+                    .setNegativeButton(R.string.cancel, null);
+            builder.show();
+
+        }
+    }
+
+
 
 
     /**

@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -15,6 +16,8 @@ import org.ndeftools.externaltype.GenericExternalTypeRecord;
 import org.ndeftools.util.activity.NfcTagWriterActivity;
 
 import java.nio.charset.Charset;
+import java.util.List;
+import java.util.ListIterator;
 
 import android.util.Log;
 
@@ -30,6 +33,8 @@ public class NFCWriteActivity extends NfcTagWriterActivity {
 
     NFCAvalability nfcAvalability = NFCAvalability.UNINITIALIZED;
 
+    RSMDevice rsmDevice;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -37,8 +42,19 @@ public class NFCWriteActivity extends NfcTagWriterActivity {
 
         Intent intent = getIntent();
         NDEFData = intent.getByteArrayExtra(MainActivity.NDEF_DATA_TO_BE_WRITTEN);
-        TextView t = (TextView) findViewById(R.id.writerStatusText);
-        t.setText("Ready to write");
+        rsmDevice = intent.getExtras().getParcelable(MainActivity.RSM_DEVICE_STRUCTURE);
+
+        ListView lv = (ListView) findViewById(R.id.deviceInfoToBeWritten);
+
+        List<RSMDeviceInfoAtom> deviceInfoList = rsmDevice.getDeviceInfoList(this);
+        ListIterator<RSMDeviceInfoAtom> iter = deviceInfoList.listIterator();
+        while (iter.hasNext()) {
+            if(iter.next().settingsType == RSMDevice.UserSettings.STATUS_ATOM) {
+                iter.remove();
+            }
+        }
+        RSMDeviceInfoListAdapter devAdapter = new RSMDeviceInfoListAdapter(this, deviceInfoList);
+        lv.setAdapter(devAdapter);
 
         // lets start detecting NDEF message using foreground mode
         setDetecting(true);

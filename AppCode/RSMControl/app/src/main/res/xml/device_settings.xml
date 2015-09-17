@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <PreferenceCategory
+        android:title="Device Identification">
+
+        <EditTextPreference
+            android:title="Device ID"
+            android:summary="%s"
+            android:key="deviceID" />
+
+    </PreferenceCategory>
+
+
+    <PreferenceCategory
+        android:title="Advanced">
+
+        <EditTextPreference
+            android:inputType="numberDecimal"
+            android:defaultValue="47000"
+            android:summary="%s"
+            android:key="currentSettingResistance"
+            android:title="Current Setting Resistor Value" />
+
+
+    </PreferenceCategory>
+</PreferenceScreen>

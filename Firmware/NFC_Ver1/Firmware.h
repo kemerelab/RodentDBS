@@ -73,7 +73,7 @@ typedef struct __attribute__((__packed__)) DeviceStatus_t {
 typedef struct __attribute__((__packed__)) StimParams_t {
     uint8_t Enabled;
     uint16_t Period;
-    uint16_t Amplitude;
+    uint8_t Amplitude;
     uint16_t PulseWidth;
 } StimParams_t;
 

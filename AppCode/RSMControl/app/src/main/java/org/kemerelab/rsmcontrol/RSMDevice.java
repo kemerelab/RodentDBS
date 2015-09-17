@@ -1,38 +1,53 @@
 package org.kemerelab.rsmcontrol;
 
+import android.content.Context;
+import android.content.res.Resources;
 import android.os.Parcel;
 import android.os.Parcelable;
-import android.text.style.AlignmentSpan;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.StringTokenizer;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Created by ckemere on 8/18/15.
  */
+
+class RSMDeviceInfoAtom {
+    public String caption;
+    public String datum;
+    public String suffix;
+    public String header;
+    public RSMDevice.UserSettings settingsType;
+
+    public RSMDeviceInfoAtom(String _caption, String _datum, String _suffix, String _heading, RSMDevice.UserSettings _settingsType) {
+        caption = _caption; datum = _datum; suffix = _suffix; header = _heading; settingsType = _settingsType;
+    }
+}
+
 public class RSMDevice implements Parcelable {
 
+    private byte[] deviceID;
+    private byte firmwareVersion;
 
-    public byte stimulationEnabled; // true or false
-    public short stimulationWidth; // length of each phase of biphasic pulse in us
-    public byte[] deviceID;
+    private byte stimulationEnabled; // true or false
+    private short stimulationWidth; // length of each phase of biphasic pulse in us
+    private short stimulationPeriod; // in us
+    private byte stimulationCurrentSetting; // follow formula! actual amplitude = 0.997 / (16 * 47 K) * sA
+    private int currentSourceRangeResistor;
 
-    public short stimulationPeriod; // in us
-    public short stimulationAmplitude; // in uV
+    private Integer uptime; // system uptime in seconds
+    private Integer lastUpdate; // time since last update of data in seconds
+    private short batteryVoltage; // battery voltage in millivolts
 
-    public Integer uptime; // system uptime in seconds
-    public Integer lastUpdate; // time since last update of data in seconds
-    public short batteryVoltage; // battery voltage in millivolts
-
-    public byte commandVersion;
 
     public Boolean isValid = false;
+
+    public enum UserSettings  {NA, STATUS_ATOM,
+        DEVICE_ID, ENABLE_STIMULATION, AMPLITUDE, FREQUENCY, PULSE_WIDTH};
 
 
     public RSMDevice() {
@@ -40,35 +55,38 @@ public class RSMDevice implements Parcelable {
         deviceID = deviceIDStr.getBytes(StandardCharsets.UTF_8);
         stimulationEnabled = 0;
         stimulationPeriod = 10000;
-        stimulationAmplitude = 0;
-        stimulationWidth = 10;
+        stimulationCurrentSetting = 0;
+        stimulationWidth = 60;
         uptime = 0;
         lastUpdate = 0;
         batteryVoltage = 0;
-        commandVersion = 1;
+        firmwareVersion = 1;
         isValid = false;
+        currentSourceRangeResistor = 47000;
     }
 
     public RSMDevice(byte[] data) {
         deviceID = new byte[4];
         stimulationEnabled = 0;
         stimulationPeriod = 10000;
-        stimulationAmplitude = 0;
+        stimulationCurrentSetting = 0;
         stimulationWidth = 0;
         uptime = 0;
         lastUpdate = 0;
         batteryVoltage = 0;
-        commandVersion = 0;
+        firmwareVersion = 0;
+        currentSourceRangeResistor = 47000;
+
 
         isValid = false;
         ByteBuffer buf = ByteBuffer.wrap(data);
         buf.order(ByteOrder.LITTLE_ENDIAN);
         try {
-            commandVersion = buf.get();
+            firmwareVersion = buf.get();
             buf.get(deviceID); // deviceID is size 4!
             stimulationEnabled = buf.get();
             stimulationPeriod = buf.getShort();
-            stimulationAmplitude = buf.getShort();
+            stimulationCurrentSetting = buf.get();
             stimulationWidth = buf.getShort();
             batteryVoltage = buf.getShort();
             uptime = buf.getInt();
@@ -84,17 +102,96 @@ public class RSMDevice implements Parcelable {
         ByteBuffer buf = ByteBuffer.allocate(22); // hard coded for current data string!
 
         buf.order(ByteOrder.LITTLE_ENDIAN);
-        buf.put((byte) commandVersion);
+        buf.put((byte) firmwareVersion);
         buf.put(deviceID);
         buf.put((byte) stimulationEnabled);
         buf.putShort((short) stimulationPeriod);
-        buf.putShort((short) stimulationAmplitude);
+        buf.put((byte) stimulationCurrentSetting);
         buf.putShort((short) stimulationWidth);
         buf.putShort((short) 0); // battery voltage will get reset by device
         buf.putInt(0); // uptime will get reset by device
         buf.putInt(0); // lastUpdate will get reset by device
 
         return buf.array();
+    }
+
+    public String getAmplitudeString() {
+        float amp = 1e6f * 0.997f * stimulationCurrentSetting /
+                (16 * currentSourceRangeResistor);
+        return String.format("%.0f", amp);
+
+    }
+
+    public float getMaxAmplitude() {
+        return ( 0.997f * 127 * 1e6f / (16 * currentSourceRangeResistor) );
+    }
+
+    public void setStimCurrent(float amplitude) {
+        int cur = (int) ( amplitude * 16.0f * currentSourceRangeResistor / 0.997f / 1e6f );
+        if (cur > 127) {
+            // log bug?
+            stimulationCurrentSetting = 127;
+        } else if (cur < 0) {
+            stimulationCurrentSetting = 0;
+        } else {
+            stimulationCurrentSetting = (byte) cur;
+        }
+    }
+
+    public void setPulseWidth(short value) {
+        stimulationWidth = value;
+    }
+
+    public short getPulseWidth() {
+        return stimulationWidth;
+    }
+
+    public void enableStimulation() {
+        stimulationEnabled = 1;
+    }
+
+    public void disableStimulation() {
+        stimulationEnabled = 0;
+    }
+
+    public void setStimulationEnabled(Boolean val) {
+        if (val) {
+            stimulationEnabled = 1;
+        }
+        else {
+            stimulationEnabled = 0;
+        }
+    }
+
+    public void setDeviceID(String idString) {
+        byte[] idStringBytes = idString.getBytes(StandardCharsets.UTF_8);
+        deviceID = Arrays.copyOfRange(idStringBytes,0,4);
+    }
+
+    public String getDeviceID() {
+        return new String(deviceID);
+    }
+
+
+    public float getMinFrequency() {
+        return 15.26f; // 1,000,000 / 65,535
+    }
+
+    public void setStimPeriod(float freq) {
+        if (freq == 0) {
+            stimulationEnabled = 0;
+            stimulationPeriod = (short) ((int) 60000); // close to max int
+        }
+        else {
+            int per = (int) (1000000.0f / freq);
+            stimulationPeriod = (short) per;
+        }
+    }
+
+    public String getStimFrequencyString() {
+        float freq = 1e6f / stimulationPeriod;
+        return String.format("%.0f", freq);
+
     }
 
     public String getLastUpdateString() {
@@ -129,6 +226,42 @@ public class RSMDevice implements Parcelable {
             return "no data";
     }
 
+    public List<RSMDeviceInfoAtom> getDeviceInfoList(Context context) {
+        List deviceInfoList = new ArrayList<RSMDeviceInfoAtom>();
+
+        Resources res = context.getResources();
+        deviceInfoList.add(new RSMDeviceInfoAtom("","","","Device Info", UserSettings.NA));
+        deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.deviceIDlabel),
+                getDeviceID(), "", "", UserSettings.DEVICE_ID));
+        deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.firmwareLabel),
+                Byte.toString(firmwareVersion), "", "", UserSettings.STATUS_ATOM));
+
+        deviceInfoList.add(new RSMDeviceInfoAtom("","","","Stimulation Settings", UserSettings.NA));
+        deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.stimEnabledLabel),
+                Boolean.toString(stimulationEnabled != 0), "","", UserSettings.ENABLE_STIMULATION));
+        deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.stimAmplitudeLabel),
+                getAmplitudeString(), " µV", "", UserSettings.AMPLITUDE));
+        deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.stimFrequencyLabel),
+                getStimFrequencyString(), " Hz", "", UserSettings.FREQUENCY));
+        deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.pulseWidthLabel),
+                Short.toString(stimulationWidth), " µs", "", UserSettings.PULSE_WIDTH));
+
+        deviceInfoList.add(new RSMDeviceInfoAtom("","","","Device Status", UserSettings.STATUS_ATOM));
+        deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.uptimeLabel),
+                getUptimeString(),"", "", UserSettings.STATUS_ATOM));
+        deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.batteryVoltageLabel),
+                getBatteryVoltageString()," mV", "", UserSettings.STATUS_ATOM));
+        deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.lastUpdateLabel),
+                getLastUpdateString(),"", "", UserSettings.STATUS_ATOM));
+
+        return deviceInfoList;
+    }
+
+
+    public void showSettingsDialog(Context context, UserSettings whichSetting) {
+
+    }
+
     // PARCELABLE Interface
 
     public int describeContents() {
@@ -139,8 +272,9 @@ public class RSMDevice implements Parcelable {
         out.writeByteArray(deviceID);
         out.writeByte(stimulationEnabled);
         out.writeInt(stimulationPeriod);
-        out.writeInt(stimulationAmplitude);
+        out.writeInt(stimulationCurrentSetting);
         out.writeInt(stimulationWidth);
+        out.writeInt(currentSourceRangeResistor);
     }
 
     public static final Parcelable.Creator<RSMDevice> CREATOR
@@ -160,11 +294,15 @@ public class RSMDevice implements Parcelable {
         batteryVoltage = -1;
         isValid = false;
 
+        deviceID = new byte[4];
+
         in.readByteArray(deviceID);
         stimulationEnabled = in.readByte();
         stimulationPeriod = (short) in.readInt();
-        stimulationAmplitude = (short) in.readInt();
+        stimulationCurrentSetting = (byte) in.readInt();
         stimulationWidth = (short) in.readInt();
+        currentSourceRangeResistor = in.readInt();
+
     }
 
 }
