@@ -6,7 +6,7 @@
     <string name="nfcStatusString">NFC Status</string>
     <string name="deviceIDlabel">Device ID</string>
     <string name="firmwareLabel">Firmware Version</string>
-    <string name="stimEnabledLabel">Stimulation Enabled</string>
+    <string name="stimEnabledLabel">Stimulation</string>
     <string name="enableSwitchLabel">Stimulation</string>
     <string name="stimFrequencyLabel">Stimulation Frequency</string>
     <string name="stimAmplitudeLabel">Stimulaton Amplitude</string>
@@ -53,7 +53,7 @@
     <string name="title_activity_nfcwrite">NFCWriteActivity</string>
 
     <string name="hello_world">Hello world!</string>
-    <string name="title_activity_change_device_settings">Change Settings</string>
+    <string name="title_activity_settings">Settings</string>
 
 <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>

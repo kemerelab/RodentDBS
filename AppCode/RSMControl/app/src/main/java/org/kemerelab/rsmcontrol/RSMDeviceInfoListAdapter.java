@@ -5,6 +5,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import java.util.List;
@@ -24,7 +25,7 @@ public class RSMDeviceInfoListAdapter extends ArrayAdapter<RSMDeviceInfoAtom> {
 
     @Override
     public int getViewTypeCount() {
-        return 2;
+        return 3;
     }
 
 
@@ -32,17 +33,21 @@ public class RSMDeviceInfoListAdapter extends ArrayAdapter<RSMDeviceInfoAtom> {
     public int getItemViewType(int position) {
         RSMDeviceInfoAtom p = getItem(position);
         if (p.datum.equals("")) {
-            return 1;
+            return 2;
         }
         else {
-            return 0;
+            if (p.settingsType == RSMDevice.UserSettings.STATUS_ATOM) {
+                return 1;
+            }
+            else {
+                return 0;
+            }
         }
     }
 
     static class ViewHolder {
         TextView caption;
         TextView datum;
-        TextView suffix;
         TextView header;
     }
 
@@ -60,11 +65,17 @@ public class RSMDeviceInfoListAdapter extends ArrayAdapter<RSMDeviceInfoAtom> {
                 holder.header = (TextView) v.findViewById(R.id.SectionHeading);
                 v.setTag(holder);
             } else {
-                v = vi.inflate(R.layout.device_info_atom, null);
-                holder.caption = (TextView) v.findViewById(R.id.Caption);
-                holder.datum = (TextView) v.findViewById(R.id.Data);
-                holder.suffix = (TextView) v.findViewById(R.id.Suffix);
-                v.setTag(holder);
+                if (p.settingsType == RSMDevice.UserSettings.STATUS_ATOM) {
+                    v = vi.inflate(R.layout.device_info_status_atom, null);
+                    holder.caption = (TextView) v.findViewById(R.id.Caption);
+                    holder.datum = (TextView) v.findViewById(R.id.Data);
+                    v.setTag(holder);
+                } else {
+                    v = vi.inflate(R.layout.device_info_atom, null);
+                    holder.caption = (TextView) v.findViewById(R.id.Caption);
+                    holder.datum = (TextView) v.findViewById(R.id.Data);
+                    v.setTag(holder);
+                }
             }
         }
         else {
@@ -72,12 +83,11 @@ public class RSMDeviceInfoListAdapter extends ArrayAdapter<RSMDeviceInfoAtom> {
         }
 
         if (p.datum.equals("")) {
-            holder.header.setText(p.header);
+            holder.header.setText(p.caption);
         }
         else {
             holder.caption.setText(p.caption);
             holder.datum.setText(p.datum);
-            holder.suffix.setText(p.suffix);
         }
 
         return v;

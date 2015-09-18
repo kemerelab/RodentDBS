@@ -19,12 +19,10 @@ import java.util.List;
 class RSMDeviceInfoAtom {
     public String caption;
     public String datum;
-    public String suffix;
-    public String header;
     public RSMDevice.UserSettings settingsType;
 
-    public RSMDeviceInfoAtom(String _caption, String _datum, String _suffix, String _heading, RSMDevice.UserSettings _settingsType) {
-        caption = _caption; datum = _datum; suffix = _suffix; header = _heading; settingsType = _settingsType;
+    public RSMDeviceInfoAtom(String _caption, String _datum, RSMDevice.UserSettings _settingsType) {
+        caption = _caption; datum = _datum; settingsType = _settingsType;
     }
 }
 
@@ -86,7 +84,15 @@ public class RSMDevice implements Parcelable {
             buf.get(deviceID); // deviceID is size 4!
             stimulationEnabled = buf.get();
             stimulationPeriod = buf.getShort();
-            stimulationCurrentSetting = buf.get();
+            switch (firmwareVersion) {
+                case 3:
+                    stimulationCurrentSetting = (byte) buf.getShort();
+                    break;
+                case 4:
+                default:
+                    stimulationCurrentSetting = buf.get();
+                    break;
+            }
             stimulationWidth = buf.getShort();
             batteryVoltage = buf.getShort();
             uptime = buf.getInt();
@@ -99,14 +105,31 @@ public class RSMDevice implements Parcelable {
 
 
     public byte[] getDeviceInfoAsByteArray() {
-        ByteBuffer buf = ByteBuffer.allocate(22); // hard coded for current data string!
+        ByteBuffer buf;
+        switch (firmwareVersion) {
+            case 3:
+                buf = ByteBuffer.allocate(21); // hard coded for current data string!
+                break;
+            case 4:
+            default:
+                buf = ByteBuffer.allocate(22); // hard coded for current data string!
+                break;
+        }
 
         buf.order(ByteOrder.LITTLE_ENDIAN);
         buf.put((byte) firmwareVersion);
         buf.put(deviceID);
         buf.put((byte) stimulationEnabled);
         buf.putShort((short) stimulationPeriod);
-        buf.put((byte) stimulationCurrentSetting);
+        switch (firmwareVersion) {
+            case 3:
+                buf.putShort((short) stimulationCurrentSetting);
+                break;
+            case 4:
+            default:
+                buf.put((byte) stimulationCurrentSetting);
+                break;
+        }
         buf.putShort((short) stimulationWidth);
         buf.putShort((short) 0); // battery voltage will get reset by device
         buf.putInt(0); // uptime will get reset by device
@@ -230,29 +253,29 @@ public class RSMDevice implements Parcelable {
         List deviceInfoList = new ArrayList<RSMDeviceInfoAtom>();
 
         Resources res = context.getResources();
-        deviceInfoList.add(new RSMDeviceInfoAtom("","","","Device Info", UserSettings.NA));
+        deviceInfoList.add(new RSMDeviceInfoAtom("Device Info", "", UserSettings.NA));
         deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.deviceIDlabel),
-                getDeviceID(), "", "", UserSettings.DEVICE_ID));
+                getDeviceID(),  UserSettings.DEVICE_ID));
         deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.firmwareLabel),
-                Byte.toString(firmwareVersion), "", "", UserSettings.STATUS_ATOM));
+                Byte.toString(firmwareVersion), UserSettings.STATUS_ATOM));
 
-        deviceInfoList.add(new RSMDeviceInfoAtom("","","","Stimulation Settings", UserSettings.NA));
+        deviceInfoList.add(new RSMDeviceInfoAtom("Stimulation Settings", "", UserSettings.NA));
         deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.stimEnabledLabel),
-                Boolean.toString(stimulationEnabled != 0), "","", UserSettings.ENABLE_STIMULATION));
+                Boolean.toString(stimulationEnabled != 0), UserSettings.ENABLE_STIMULATION));
         deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.stimAmplitudeLabel),
-                getAmplitudeString(), " µV", "", UserSettings.AMPLITUDE));
+                getAmplitudeString() + " µV", UserSettings.AMPLITUDE));
         deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.stimFrequencyLabel),
-                getStimFrequencyString(), " Hz", "", UserSettings.FREQUENCY));
+                getStimFrequencyString() + " Hz", UserSettings.FREQUENCY));
         deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.pulseWidthLabel),
-                Short.toString(stimulationWidth), " µs", "", UserSettings.PULSE_WIDTH));
+                Short.toString(stimulationWidth) + " µs", UserSettings.PULSE_WIDTH));
 
-        deviceInfoList.add(new RSMDeviceInfoAtom("","","","Device Status", UserSettings.STATUS_ATOM));
+        deviceInfoList.add(new RSMDeviceInfoAtom("Device Status", "", UserSettings.STATUS_ATOM));
         deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.uptimeLabel),
-                getUptimeString(),"", "", UserSettings.STATUS_ATOM));
+                getUptimeString(), UserSettings.STATUS_ATOM));
         deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.batteryVoltageLabel),
-                getBatteryVoltageString()," mV", "", UserSettings.STATUS_ATOM));
+                getBatteryVoltageString() +" mV",  UserSettings.STATUS_ATOM));
         deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.lastUpdateLabel),
-                getLastUpdateString(),"", "", UserSettings.STATUS_ATOM));
+                getLastUpdateString(),UserSettings.STATUS_ATOM));
 
         return deviceInfoList;
     }
