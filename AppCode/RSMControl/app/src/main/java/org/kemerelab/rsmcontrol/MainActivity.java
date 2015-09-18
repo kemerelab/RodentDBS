@@ -11,7 +11,6 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.text.InputType;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -22,13 +21,9 @@ import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.NumberPicker;
-import android.widget.ScrollView;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.ToggleButton;
-
-import java.nio.charset.StandardCharsets;
 
 
 public class MainActivity extends NfcReaderActivity implements AdapterView.OnItemClickListener {
@@ -95,11 +90,10 @@ public class MainActivity extends NfcReaderActivity implements AdapterView.OnIte
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
-
-            Intent intent = new Intent(this, SettingsActivity.class);
-            startActivity(intent);
-
-            return true;
+//            Intent intent = new Intent(this, SettingsActivity.class);
+//            startActivity(intent);
+//
+//            return true;
         }
 
         return super.onOptionsItemSelected(item);
@@ -197,9 +191,6 @@ public class MainActivity extends NfcReaderActivity implements AdapterView.OnIte
             t.setText(getString(R.string.nfcAvailableEnabled));
             t.setTextColor(getResources().getColor(R.color.LightBlue));
         }
-        ScrollView s = (ScrollView) findViewById(R.id.deviceView);
-        if (s != null)
-            s.setBackgroundColor(getResources().getColor(R.color.BackgroundLightRed));
     }
 
 
@@ -216,11 +207,11 @@ public class MainActivity extends NfcReaderActivity implements AdapterView.OnIte
     public void onItemClick(AdapterView<?> adapter, View view, int position,
                             long id) {
         RSMDeviceInfoAtom atom = (RSMDeviceInfoAtom) adapter.getItemAtPosition(position);
-        if (!editingDeviceInfo) {
+        if ((!editingDeviceInfo) | (atom.settingsType == RSMDevice.UserSettings.NA)) {
             return;
         }
 
-        if (atom.settingsType != RSMDevice.UserSettings.NA) {
+        if (atom.settingsType != RSMDevice.UserSettings.ENABLE_STIMULATION) {
 
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             // Get the layout inflater
@@ -230,16 +221,12 @@ public class MainActivity extends NfcReaderActivity implements AdapterView.OnIte
             // Inflate and set the layout for the dialog
 
             View v = inflater.inflate(R.layout.settings_dialog, null);
-            final ToggleButton enBut = (ToggleButton) v.findViewById(R.id.enableStimToggle);
             final NumberPicker amp = (NumberPicker) v.findViewById(R.id.stimAmplitudeNumberPicker);
             final NumberPicker freq = (NumberPicker) v.findViewById(R.id.stimCurrentNumberPicker);
             final NumberPicker pulWid = (NumberPicker) v.findViewById(R.id.pulseWidthNumberPicker);
             final EditText devId = (EditText) v.findViewById(R.id.deviceIDEditText);
 
             switch (ws) {
-                case ENABLE_STIMULATION:
-                    enBut.setVisibility(View.VISIBLE);
-                    break;
                 case AMPLITUDE:
                     amp.setMaxValue((int) rsmDevice.getMaxAmplitude());
                     amp.setMinValue(0);
@@ -275,10 +262,6 @@ public class MainActivity extends NfcReaderActivity implements AdapterView.OnIte
                         public void onClick(DialogInterface dialog, int id) {
 
                             switch (ws) {
-                                case ENABLE_STIMULATION:
-                                    rsmDevice.setStimulationEnabled(enBut.isActivated());
-                                    enBut.setVisibility(View.VISIBLE);
-                                    break;
                                 case AMPLITUDE:
                                     rsmDevice.setStimCurrent(amp.getValue());
                                     break;
@@ -303,9 +286,11 @@ public class MainActivity extends NfcReaderActivity implements AdapterView.OnIte
             builder.show();
 
         }
+        else { // Process tapping "Enable Stimulation"
+            rsmDevice.toggleStimulationEnabled();
+            updateDeviceDisplay();
+        }
     }
-
-
 
 
     /**

@@ -6,7 +6,7 @@
         <item name="colorPrimary">@color/Brown</item>
         <item name="colorPrimaryDark">@color/DarkerBrown</item>
         <item name="colorButtonNormal">@color/Brown</item>
-        <item name="colorAccent">@color/LighterBrown</item>
+        <item name="colorAccent">@color/Blue</item>
         <item name="android:divider">@color/LighterBrown</item>
     </style>
 

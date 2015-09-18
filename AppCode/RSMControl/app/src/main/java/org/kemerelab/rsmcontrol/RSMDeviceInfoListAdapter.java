@@ -65,17 +65,20 @@ public class RSMDeviceInfoListAdapter extends ArrayAdapter<RSMDeviceInfoAtom> {
                 holder.header = (TextView) v.findViewById(R.id.SectionHeading);
                 v.setTag(holder);
             } else {
-                if (p.settingsType == RSMDevice.UserSettings.STATUS_ATOM) {
-                    v = vi.inflate(R.layout.device_info_status_atom, null);
-                    holder.caption = (TextView) v.findViewById(R.id.Caption);
-                    holder.datum = (TextView) v.findViewById(R.id.Data);
-                    v.setTag(holder);
-                } else {
-                    v = vi.inflate(R.layout.device_info_atom, null);
-                    holder.caption = (TextView) v.findViewById(R.id.Caption);
-                    holder.datum = (TextView) v.findViewById(R.id.Data);
-                    v.setTag(holder);
+                switch (p.settingsType) {
+                    case STATUS_ATOM:
+                        v = vi.inflate(R.layout.device_info_status_atom, null);
+                        break;
+                    case ENABLE_STIMULATION:
+                        v = vi.inflate(R.layout.device_info_atom_button, null);
+                        break;
+                    default:
+                        v = vi.inflate(R.layout.device_info_atom, null);
+                        break;
                 }
+                holder.caption = (TextView) v.findViewById(R.id.Caption);
+                holder.datum = (TextView) v.findViewById(R.id.Data);
+                v.setTag(holder);
             }
         }
         else {

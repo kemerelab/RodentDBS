@@ -42,10 +42,18 @@
             android:id="@+id/editToggleSwitch"
             android:layout_gravity="right"
             android:onClick="onEditSwitchToggled"
-            android:textOff="Edit"
-            android:textOn="Lock"
             android:layout_below="@+id/statusTextView"
             android:layout_alignParentRight="true" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Modify Device Settings"
+            android:layout_gravity="right"
+            android:layout_toLeftOf="@+id/editToggleSwitch"
+            android:layout_below="@+id/statusTextView"
+            android:textAppearance="@style/Base.TextAppearance.AppCompat.Body1"
+            android:textStyle="italic" />
 
         <ListView
             android:layout_below="@+id/editToggleSwitch"

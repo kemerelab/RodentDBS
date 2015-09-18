@@ -49,7 +49,7 @@
 /* Program coordination variables */
 extern volatile unsigned char KernelWakeupFlag;                         // status variable
 
-#define PROTOCOL_VERSION 3
+#define PROTOCOL_VERSION 4
 #define DEFAULT_DEVICE_IDSTR "NULL"
 
 /* Device ID variables */

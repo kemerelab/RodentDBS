@@ -158,7 +158,7 @@ void main(void)
                     DisableStimulation();
                     DeviceData.StimParams.Period = NewStimParams.Period;
                     DeviceData.StimParams.Amplitude = NewStimParams.Amplitude;
-                    SetOutputCurrent()
+                    SetOutputCurrent(DeviceData.StimParams.Amplitude);
                     DeviceData.StimParams.PulseWidth = NewStimParams.PulseWidth;
                     DeviceData.StimParams.Enabled = NewStimParams.Enabled;
                     if (NewStimParams.Enabled != 0) {

@@ -14,15 +14,6 @@
         android:paddingBottom="15px"
         android:paddingLeft="15px" />
 
-    <ToggleButton
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textOn="Enabled"
-        android:textOff="Disabled"
-        android:id="@+id/enableStimToggle"
-        android:visibility="gone"
-        android:layout_gravity="center_horizontal" />
-
     <EditText
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

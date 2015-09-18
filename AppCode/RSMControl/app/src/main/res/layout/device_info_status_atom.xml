@@ -7,7 +7,7 @@
 
     <TextView
         android:textAppearance="@style/TextAppearance.AppCompat.Button"
-        android:paddingLeft="15px"
+        android:layout_marginLeft="20px"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/Caption"
@@ -20,7 +20,7 @@
         android:layout_height="wrap_content"
         android:id="@+id/Data"
         android:text="Data"
-        android:paddingRight="20px"
+        android:layout_marginRight="20px"
         android:paddingTop="5px"
         android:paddingBottom="5px"
         android:typeface="monospace" />

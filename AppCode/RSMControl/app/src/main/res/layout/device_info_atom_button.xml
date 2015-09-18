@@ -19,8 +19,13 @@
         android:layout_height="wrap_content"
         android:id="@+id/Data"
         android:text="Data"
-        android:layout_marginRight="20px"
+        android:paddingRight="20px"
         android:paddingTop="5px"
         android:paddingBottom="5px"
-        android:typeface="monospace" />
+        android:typeface="monospace"
+        android:textColor="@color/DarkBlue"
+        android:background="@drawable/border_lightblue"
+        android:paddingLeft="20px"
+        android:layout_marginRight="20px" />
+
 </LinearLayout>

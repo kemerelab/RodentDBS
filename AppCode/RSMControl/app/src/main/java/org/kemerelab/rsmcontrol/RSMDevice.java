@@ -177,13 +177,25 @@ public class RSMDevice implements Parcelable {
         stimulationEnabled = 0;
     }
 
-    public void setStimulationEnabled(Boolean val) {
-        if (val) {
+    public void toggleStimulationEnabled() {
+        if (stimulationEnabled == 0)
             stimulationEnabled = 1;
-        }
-        else {
+        else
             stimulationEnabled = 0;
-        }
+    }
+
+    public void setStimulationEnabled(Boolean val) {
+        if (val)
+            stimulationEnabled = 1;
+        else
+            stimulationEnabled = 0;
+    }
+
+    public String getStimulationEnabledState() {
+        if (stimulationEnabled == 0)
+            return "disabled";
+        else
+            return "enabled";
     }
 
     public void setDeviceID(String idString) {
@@ -261,7 +273,7 @@ public class RSMDevice implements Parcelable {
 
         deviceInfoList.add(new RSMDeviceInfoAtom("Stimulation Settings", "", UserSettings.NA));
         deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.stimEnabledLabel),
-                Boolean.toString(stimulationEnabled != 0), UserSettings.ENABLE_STIMULATION));
+                getStimulationEnabledState(), UserSettings.ENABLE_STIMULATION));
         deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.stimAmplitudeLabel),
                 getAmplitudeString() + " µV", UserSettings.AMPLITUDE));
         deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.stimFrequencyLabel),
