@@ -1,5 +1,4 @@
 include 'com.android.support:appcompat-v7:23.0.1'
-include 'com.android.support:preference-v14:23.0.1'
 include ':ndeftools'
 include ':ndeftoolsutil'
 include ':app'
