@@ -68,10 +68,10 @@ volatile DeviceData_t DeviceData = {\
         .ID.idStr = DEFAULT_DEVICE_IDSTR, .ID.firmwareVersion = PROTOCOL_VERSION, \
         .Status.BatteryVoltage = 0, .Status.Uptime = 0, .Status.LastUpdate = 0,\
         .StimParams.Enabled = 0, .StimParams.Period = 7500, \
-        .StimParams.Amplitude = 100, .StimParams.PulseWidth = 600 };
+        .StimParams.Amplitude = 100, .StimParams.PulseWidth = 60 };
 volatile DeviceStatus_t DeviceStatus = {.BatteryVoltage = 0, .Uptime = 0, .LastUpdate = 0};
 volatile int StimParamsChanged = 0;
-volatile int PowerLEDIntensity = 50;
+volatile int PowerLEDIntensity = 200;
 
 #define CHECK_BATTERY_PERIOD 2500
 volatile int CheckBatteryCounter = CHECK_BATTERY_PERIOD-1;
@@ -79,6 +79,12 @@ volatile int CheckBatteryCounter = CHECK_BATTERY_PERIOD-1;
 volatile int ReadNFCDataCounter = READ_NFC_DATA_PERIOD-1;
 #define UPDATE_NFC_DATA_PERIOD 500
 volatile int UpdateNFCDataCounter = UPDATE_NFC_DATA_PERIOD-1;
+
+volatile int LEDState = 0;
+int HeartBeatPattern[] = {50, 450};
+const int BlinkPattern[] = {100,500,100,500,100,500,100,500};
+volatile int LEDCounter = 50;
+volatile int Blinking = 0;
 
 
 void MasterClockSetup(void){
@@ -94,7 +100,8 @@ void MasterClockSetup(void){
 }
 
 inline void Blink(void) {
-
+    if (Blinking == 0)
+        Blinking = 1;
 }
 
 void main(void)
@@ -103,6 +110,8 @@ void main(void)
             .Amplitude = 100, .PulseWidth = 600 };
 
     int StimParamsChanged = 0;
+
+    int HeartBeatState = 1;
 
     WDTCTL = WDTPW + WDTHOLD;                 // Stop WDT
 
@@ -126,7 +135,7 @@ void main(void)
      *
      */
 
-    //SetupSwitchMatrix();
+    SetupSwitchMatrix();
 
     NFCInterfaceSetup();
 
@@ -144,7 +153,6 @@ void main(void)
             CheckBatteryCounter = CHECK_BATTERY_PERIOD-1;
         }
 
-
         KernelWakeupFlag = 0;
         __bis_SR_register(LPM1_bits | GIE);        // Enter LPM1 w/ interrupts
         KernelWakeupFlag = 1;
@@ -158,12 +166,20 @@ void main(void)
                     DisableStimulation();
                     DeviceData.StimParams.Period = NewStimParams.Period;
                     DeviceData.StimParams.Amplitude = NewStimParams.Amplitude;
+
                     SetOutputCurrent(DeviceData.StimParams.Amplitude);
+
+                    __delay_cycles(800000);
+                    P1OUT=0;
                     DeviceData.StimParams.PulseWidth = NewStimParams.PulseWidth;
                     DeviceData.StimParams.Enabled = NewStimParams.Enabled;
                     if (NewStimParams.Enabled != 0) {
                         EnableStimulation();
                         Blink();
+                        HeartBeatPattern[1] = 950;
+                    }
+                    else {
+                        HeartBeatPattern[1] = 450;
                     }
                     DeviceStatus.LastUpdate = DeviceStatus.Uptime;
                 }
@@ -208,6 +224,32 @@ __interrupt void MasterClockISR (void)
     CheckBatteryCounter--;
     UpdateNFCDataCounter--;
     ReadNFCDataCounter--;
+
+    LEDCounter--;
+    if (LEDCounter <= 0) {
+        if ((++LEDState & 0x01) == 0) {
+            TA1CCR2 = PowerLEDIntensity;   //pin 2.5 brightness (PWM duty cycle versus TA1CCR0)
+            P1OUT = 1;
+        }
+        else {
+            TA1CCR2 = 0;   //pin 2.5 brightness (PWM duty cycle versus TA1CCR0)
+            P1OUT = 0;
+        }
+
+        if (Blinking == 1) {
+            LEDState &=  0x07;
+            if (LEDState > 0 )
+                LEDCounter = BlinkPattern[LEDState];
+            else {
+                LEDCounter = HeartBeatPattern[LEDState];
+                Blinking = 0;
+            }
+        }
+        else {
+            LEDState &= 0x01;
+            LEDCounter = HeartBeatPattern[LEDState];
+        }
+    }
 
     if (KernelWakeupFlag == 0) { // If the master loop has gone to sleep then wake it up
         __bic_SR_register_on_exit(LPM1_bits);

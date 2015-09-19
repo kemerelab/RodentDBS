@@ -49,7 +49,7 @@
 */
 
 #include <msp430.h>
-
+#include "stdint.h"
 
 
 // GLOBALS
@@ -102,7 +102,6 @@ __interrupt void MasterClockISR (void)
    //TA1CCR0 += 1000;        // 1 ms period
 
     if (--SecondCounter == 0) {
-        DeviceStatus.Uptime += 1;
         SecondCounter = 1000;
     }
 

@@ -67,6 +67,10 @@ inline void I2CSetup (void)
 }
 
 inline void InitializeI2CSlave(unsigned char slave_addr) {
+	char temp;
+	while (UCB0CTL1 & UCTXSTP) {
+		temp = UCB0RXBUF;
+	}
     UCB0CTL1 |= UCSWRST;           // Turn off i2c (this was buggy?)
     UCB0I2CSA = slave_addr;          // Slave Address
     UCB0CTL1  &= ~UCSWRST;           // Exit SW reset state of I2C
@@ -121,8 +125,8 @@ void ReadMemory_WordAddress(uint16_t reg_addr,
     _i2c_rx_byte_count = byte_count;  // Load RX byte counter
 
     IE2 |= UCB0TXIE;                 // Enable TX interrupt
-    _i2c_tx_data = addr_data;         // TX array start address
-    _i2c_tx_byte_count = 2;           // Load TX byte counter
+    _i2c_tx_data = addr_data;        // TX array start address
+    _i2c_tx_byte_count = 2;          // Load TX byte counter
     while (UCB0CTL1 & UCTXSTP);      // Ensure stop condition got sent
     UCB0CTL1 |= UCTR + UCTXSTT;      // I2C TX, start condition
 
@@ -184,6 +188,7 @@ __interrupt void USCIAB0TX_ISR(void)
         _i2c_rx_byte_count--;                // Decrement RX byte counter
         if (_i2c_rx_byte_count) {            // Check RX byte counter
           *_i2c_rx_data++ = UCB0RXBUF;       // Fill RX buffer
+          __delay_cycles(2);
           if (_i2c_rx_byte_count == 1)       // Second to last bye,
               UCB0CTL1 |= UCTXSTP;           //    set I2C stop condition.
         }

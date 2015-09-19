@@ -51,7 +51,7 @@
 #define RF430_PORT_SEL P2SEL
 #define RF430_PORT_SEL2 P2SEL2
 #define RF430_PORT_DIR P2DIR
-#define RF430_RST BIT0
+#define RF430_RST BIT2
 
 // RF430 register addresses
 #define CONTROL_REG        0xFFFE
