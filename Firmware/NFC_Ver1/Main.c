@@ -75,13 +75,13 @@ volatile int PowerLEDIntensity = 200;
 
 #define CHECK_BATTERY_PERIOD 2500
 volatile int CheckBatteryCounter = CHECK_BATTERY_PERIOD-1;
-#define READ_NFC_DATA_PERIOD 333
+#define READ_NFC_DATA_PERIOD 250
 volatile int ReadNFCDataCounter = READ_NFC_DATA_PERIOD-1;
-#define UPDATE_NFC_DATA_PERIOD 500
+#define UPDATE_NFC_DATA_PERIOD 3333
 volatile int UpdateNFCDataCounter = UPDATE_NFC_DATA_PERIOD-1;
 
 volatile int LEDState = 0;
-int HeartBeatPattern[] = {50, 450};
+int HeartBeatPattern[] = {25, 475};
 const int BlinkPattern[] = {100,500,100,500,100,500,100,500};
 volatile int LEDCounter = 50;
 volatile int Blinking = 0;
@@ -116,9 +116,11 @@ void main(void)
     WDTCTL = WDTPW + WDTHOLD;                 // Stop WDT
 
     // Set up system clocks
-    BCSCTL1 = CALBC1_8MHZ;   // Set range
-    DCOCTL = CALDCO_8MHZ;    // Set DCO step + modulation
+    BCSCTL1 = CALBC1_1MHZ;   // Set range
+    DCOCTL = CALDCO_1MHZ;    // Set DCO step + modulation
     BCSCTL3 |= LFXT1S_2;     // LFXT1 = VLO (~12 kHz)
+    BCSCTL2 = DIVS_0;  // Setup SMCLK to be 1 MHz (divide DCO/1)
+
 
     // Default - initialize all ports to output
     P1DIR = 0xFF; P2DIR = 0xFF; P3DIR = 0xFF;
@@ -166,20 +168,16 @@ void main(void)
                     DisableStimulation();
                     DeviceData.StimParams.Period = NewStimParams.Period;
                     DeviceData.StimParams.Amplitude = NewStimParams.Amplitude;
-
                     SetOutputCurrent(DeviceData.StimParams.Amplitude);
-
-                    __delay_cycles(800000);
-                    P1OUT=0;
                     DeviceData.StimParams.PulseWidth = NewStimParams.PulseWidth;
                     DeviceData.StimParams.Enabled = NewStimParams.Enabled;
                     if (NewStimParams.Enabled != 0) {
                         EnableStimulation();
                         Blink();
-                        HeartBeatPattern[1] = 950;
+                        HeartBeatPattern[1] = 975;
                     }
                     else {
-                        HeartBeatPattern[1] = 450;
+                        HeartBeatPattern[1] = 475;
                     }
                     DeviceStatus.LastUpdate = DeviceStatus.Uptime;
                 }
@@ -229,11 +227,11 @@ __interrupt void MasterClockISR (void)
     if (LEDCounter <= 0) {
         if ((++LEDState & 0x01) == 0) {
             TA1CCR2 = PowerLEDIntensity;   //pin 2.5 brightness (PWM duty cycle versus TA1CCR0)
-            P1OUT = 1;
+//            P1OUT = 1;
         }
         else {
             TA1CCR2 = 0;   //pin 2.5 brightness (PWM duty cycle versus TA1CCR0)
-            P1OUT = 0;
+//            P1OUT = 0;
         }
 
         if (Blinking == 1) {

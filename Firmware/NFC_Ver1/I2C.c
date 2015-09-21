@@ -52,11 +52,8 @@ unsigned char _i2c_repeated_start_rx;
 
 inline void I2CSetup (void)
 {
-    // ASSERT:
-    // BCSCTL1 = CALBC1_8MHZ; // Set range for 8 MHz MCLK
-    // DCOCTL = CALDCO_8MHZ;  // Set DCO step + modulation for 8 MHz MCLK
-    BCSCTL2 = DIVS_3;  // Setup SMCLK to be 1 MHz (divide DCO/8)
 
+    // Assume SMCLK is 1 MHz
     P1SEL  |= BIT6 + BIT7;                    // Assign I2C pins to USCI_B0
     P1SEL2 |= BIT6 + BIT7;                    // Assign I2C pins to USCI_B0
     UCB0CTL1 |= UCSWRST;                      // Enable SW reset
