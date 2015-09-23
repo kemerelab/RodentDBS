@@ -1,3 +1,8 @@
+## Overview
+
+The firmware runs on an MSP430G2553. This is a low power TI microcontroller. 
+
+## Estimating power consumption 
 
 **MSP430**
 In sleep mode, we can only go to LPM0 because the stimulation counter is using 
@@ -6,7 +11,6 @@ the DCO to generate a 1 MHz SMCLK. Unclear is how often we are in active mode.
    - Active power  = ~70 uA
    - Sleep (LPM0) = ~35 uA
 
-
 **Battery voltage sampling**
 The MSP430 ADC10 will consume something like 800 uA when it's turned on, but we sample only
 once per minute, so expect not to have significant contribution to power consumption.
@@ -14,7 +18,6 @@ once per minute, so expect not to have significant contribution to power consump
 **I2C current**
 I2C pullup resistors should not be causing signifant current use as I/Os should be high-Z
 except during data transmission.
-
 
 **Power LED**
 We're using PWM and flashing, so we're active for only PWM rate * On time.  An on PWM level of
@@ -58,7 +61,6 @@ expect passive mode to dominate, or ~40 uA consumption.
 
   - Total power assuming active mode dominates for MS430 = 217 uA
   - Total power assuming passive mode dominates for MS430 = 182 uA
-
 
 According to Energizer, we can expect a CR2032 to drop below 2.7 V (the rated minimum voltage
 for the DS4432 current source) after about 1000 hours at a constant draw of 0.19 mA. So we
