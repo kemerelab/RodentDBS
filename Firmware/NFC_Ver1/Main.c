@@ -71,19 +71,25 @@ volatile DeviceData_t DeviceData = {\
         .StimParams.Amplitude = 100, .StimParams.PulseWidth = 60 };
 volatile DeviceStatus_t DeviceStatus = {.BatteryVoltage = 0, .Uptime = 0, .LastUpdate = 0};
 volatile int StimParamsChanged = 0;
-volatile int PowerLEDIntensity = 200;
+volatile int PowerLEDIntensity = 200; // Out of 1000
 
-#define CHECK_BATTERY_PERIOD 2500
-volatile int CheckBatteryCounter = CHECK_BATTERY_PERIOD-1;
-#define READ_NFC_DATA_PERIOD 250
-volatile int ReadNFCDataCounter = READ_NFC_DATA_PERIOD-1;
+#define CHECK_BATTERY_PERIOD 60000 // 60 s
+volatile unsigned int CheckBatteryCounter = CHECK_BATTERY_PERIOD-1;
+
+#define READ_NFC_DATA_PERIOD 30000 // 30 s
+volatile unsigned int ReadNFCDataCounter = READ_NFC_DATA_PERIOD-1;
+
 #define UPDATE_NFC_DATA_PERIOD 3333
-volatile int UpdateNFCDataCounter = UPDATE_NFC_DATA_PERIOD-1;
+volatile unsigned int UpdateNFCDataCounter = UPDATE_NFC_DATA_PERIOD-1;
 
 volatile int LEDState = 0;
-int HeartBeatPattern[] = {25, 475};
-const int BlinkPattern[] = {100,500,100,500,100,500,100,500};
-volatile int LEDCounter = 50;
+#define HEARTBEAT_ON 25
+#define HEARTBEAT_OFF_STIM_OFF 475
+#define HEARTBEAT_OFF_STIM_ON 975
+unsigned int HeartBeatPattern[] = {HEARTBEAT_ON, HEARTBEAT_OFF_STIM_OFF}; // Stim off! stim on = 25/975
+const unsigned int BlinkPattern[] = {50,150,50,150,50,150,50,150,
+        50,150,50,150,50,150,50,150};
+volatile unsigned int LEDCounter = HEARTBEAT_ON;
 volatile int Blinking = 0;
 
 
@@ -104,14 +110,18 @@ inline void Blink(void) {
         Blinking = 1;
 }
 
+inline void KernelSleep(void) {
+    KernelWakeupFlag = 0;
+    __bis_SR_register(CPUOFF + GIE); // Enter LPM0 w/ interrupts
+    KernelWakeupFlag = 1;
+}
+
 void main(void)
 {
     StimParams_t NewStimParams = { .Enabled = 0, .Period = 7500, \
             .Amplitude = 100, .PulseWidth = 600 };
 
     int StimParamsChanged = 0;
-
-    int HeartBeatState = 1;
 
     WDTCTL = WDTPW + WDTHOLD;                 // Stop WDT
 
@@ -130,37 +140,19 @@ void main(void)
 
     BatteryStatusSetup();
 
-    /*
-     * It would be good to add error checking here somehow.
-     * Maybe make sure that I2C peripherals are present (I suppose this
-     * requires I2C timeouts!).
-     *
-     */
-
     SetupSwitchMatrix();
 
     NFCInterfaceSetup();
 
     MasterClockSetup();
 
-    //EnableStimulation();
-
-    //__enable_interrupt();   //global interrupt enable
-
-
     while (1) {
 
-        if (CheckBatteryCounter <= 0) {
-            CheckBattery();
-            CheckBatteryCounter = CHECK_BATTERY_PERIOD-1;
-        }
-
-        KernelWakeupFlag = 0;
-        __bis_SR_register(LPM1_bits | GIE);        // Enter LPM1 w/ interrupts
-        KernelWakeupFlag = 1;
-
-
-        if (ReadNFCDataCounter <= 0 ) {
+        if ((RF430InterruptTriggered != 0) || (ReadNFCDataCounter <= 0 )) {
+            if (RF430InterruptTriggered != 0) {
+                ClearNFCInterrupts();
+                RF430InterruptTriggered = 0;
+            }
             if (ReadDeviceParams(&NewStimParams) != 0) {
                 StimParamsChanged = memcmp((unsigned char*)&NewStimParams,
                         (unsigned char*)&(DeviceData.StimParams), sizeof(NewStimParams));
@@ -174,33 +166,27 @@ void main(void)
                     if (NewStimParams.Enabled != 0) {
                         EnableStimulation();
                         Blink();
-                        HeartBeatPattern[1] = 975;
+                        HeartBeatPattern[1] = HEARTBEAT_OFF_STIM_ON;
                     }
                     else {
-                        HeartBeatPattern[1] = 475;
+                        HeartBeatPattern[1] = HEARTBEAT_OFF_STIM_OFF;
                     }
                     DeviceStatus.LastUpdate = DeviceStatus.Uptime;
                 }
             }
             ReadNFCDataCounter = READ_NFC_DATA_PERIOD-1;
         }
-
-
-        KernelWakeupFlag = 0;
-        __bis_SR_register(LPM1_bits | GIE);        // Enter LPM1 w/ interrupts
-        KernelWakeupFlag = 1;
-
-
-        if (UpdateNFCDataCounter <= 0) {
+        else if (UpdateNFCDataCounter <= 0) {
             UpdateDeviceStatus();
             UpdateNFCDataCounter = UPDATE_NFC_DATA_PERIOD-1;
         }
+        else if (CheckBatteryCounter <= 0) {
+            CheckBattery();
+            CheckBatteryCounter = CHECK_BATTERY_PERIOD-1;
+            KernelSleep();
+        }
 
-        KernelWakeupFlag = 0;
-        __bis_SR_register(LPM1_bits | GIE);        // Enter LPM1 w/ interrupts
-        KernelWakeupFlag = 1;
-
-        // Add heartbeat functionality.
+        KernelSleep();
 
     }
 }
@@ -211,7 +197,6 @@ void main(void)
 __interrupt void MasterClockISR (void)
 {
     static unsigned int SecondCounter = 1000;
-   //TA1CCR0 += 1000;        // 1 ms period
 
     if (--SecondCounter == 0) {
         DeviceStatus.Uptime += 1;
@@ -227,15 +212,13 @@ __interrupt void MasterClockISR (void)
     if (LEDCounter <= 0) {
         if ((++LEDState & 0x01) == 0) {
             TA1CCR2 = PowerLEDIntensity;   //pin 2.5 brightness (PWM duty cycle versus TA1CCR0)
-//            P1OUT = 1;
         }
         else {
             TA1CCR2 = 0;   //pin 2.5 brightness (PWM duty cycle versus TA1CCR0)
-//            P1OUT = 0;
         }
 
         if (Blinking == 1) {
-            LEDState &=  0x07;
+            LEDState &=  0x0F;
             if (LEDState > 0 )
                 LEDCounter = BlinkPattern[LEDState];
             else {
@@ -250,7 +233,7 @@ __interrupt void MasterClockISR (void)
     }
 
     if (KernelWakeupFlag == 0) { // If the master loop has gone to sleep then wake it up
-        __bic_SR_register_on_exit(LPM1_bits);
+        __bic_SR_register_on_exit(CPUOFF);
     }
 
 }

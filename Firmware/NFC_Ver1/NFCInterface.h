@@ -47,16 +47,29 @@
 
 #define RF430_ADDRESS 0x28
 
-#define RF430_PORT_OUT P2OUT
-#define RF430_PORT_SEL P2SEL
-#define RF430_PORT_SEL2 P2SEL2
-#define RF430_PORT_DIR P2DIR
-#define RF430_RST BIT2
+#define RF430_RESET_POUT P2OUT
+#define RF430_RESET_PSEL P2SEL
+#define RF430_RESET_PSEL2 P2SEL2
+#define RF430_RESET_PDIR P2DIR
+#define RF430_RESET BIT2
+
+#define RF430_INTR_POUT P2OUT
+#define RF430_INTR_PSEL P2SEL
+#define RF430_INTR_PSEL2 P2SEL2
+#define RF430_INTR_PDIR P2DIR
+#define RF430_INTR_PREN P2REN
+#define RF430_INTR_PIE P2IE
+#define RF430_INTR_PIES P2IES
+#define RF430_INTR_PIFG P2IFG
+#define RF430_INTR BIT0
+
 
 // RF430 register addresses
 #define CONTROL_REG        0xFFFE
 #define STATUS_REG         0xFFFC
 #define VERSION_REG        0xFFEF // NOTE - this points to the version BYTE
+#define INTR_ENABLE_REG    0xFFFA
+#define INTR_FLAG_REG      0xFFF8
 
 //define the different virtual register bits
 //CONTROL_REG bits
@@ -73,6 +86,9 @@
 #define READY      BIT0
 #define CRC_ACTIVE BIT1
 #define RF_BUSY    BIT2
+
+//INTERRUPT_*_REG bits
+#define END_OF_WRITE BIT2
 
 struct __attribute__((__packed__)) TLV {
     unsigned char Tag;
@@ -123,10 +139,12 @@ struct __attribute__((__packed__)) I2C_NDEF_FullRecord {
 #define STIMPARAMS_ADDR EXTERNAL_RECORD_DATA_START + sizeof(DeviceID_t)
 #define STATUS_ADDR STIMPARAMS_ADDR + sizeof(StimParams_t)
 
+extern volatile int RF430InterruptTriggered;
+
 
 void NFCInterfaceSetup(void);
 void UpdateDeviceStatus(void);
 int ReadDeviceParams(StimParams_t *NewStimParams);
-
+void ClearNFCInterrupts(void);
 
 #endif

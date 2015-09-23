@@ -69,17 +69,27 @@ struct I2C_NDEF_FullRecord NDEF_Data = { \
         .ND.RecordHeader.TypeName = EXTERNAL_RECORD_TYPE_NAME, \
 };
 
+volatile int RF430InterruptTriggered = 0;
+
 void NFCInterfaceSetup(void) {
     // Reset the RF430 using its reset pin. Normally on power up this wouldn't be necessary,
     // but it's good in case something has happened...
-    RF430_PORT_SEL &= ~RF430_RST;
-    RF430_PORT_SEL2 &= ~RF430_RST;
-    RF430_PORT_OUT &= ~RF430_RST; // Reset pin is active low. Reset device
-    RF430_PORT_DIR |= RF430_RST;
+    RF430_RESET_PSEL &= ~RF430_RESET;
+    RF430_RESET_PSEL2 &= ~RF430_RESET;
+    RF430_RESET_POUT &= ~RF430_RESET; // Reset pin is active low. Reset device
+    RF430_RESET_PDIR |= RF430_RESET;
     __delay_cycles(1000); // Wait a bit
-    RF430_PORT_OUT |= RF430_RST; // Release the RF430 to on
+    RF430_RESET_POUT |= RF430_RESET; // Release the RF430 to on
 
     __delay_cycles(100000);
+
+    RF430_INTR_PDIR &= ~RF430_INTR;     // Set INTR pin to input
+    RF430_INTR_PREN |= RF430_INTR;     // Enable pullup/down resistor
+    RF430_INTR_POUT &= ~RF430_INTR;     // Set pull DOWN resistor
+    RF430_INTR_PIES &= ~RF430_INTR;     // Low-to-high edge
+    RF430_INTR_PIFG &= ~RF430_INTR;     // IFG cleared
+    RF430_INTR_PIE |= RF430_INTR;       // Interrupt enabled
+    RF430_INTR_PIFG &= ~RF430_INTR;     // IFG cleared
 
     InitializeI2CSlave(RF430_ADDRESS);
 
@@ -116,7 +126,9 @@ void NFCInterfaceSetup(void) {
     //write NDEF memory with full Capability Container + NDEF message
     memcpy(&(NDEF_Data.ND.BinaryMessage), (unsigned char *)&DeviceData, sizeof(DeviceData));
     WriteContinuous_I2C((unsigned char *)(&NDEF_Data), sizeof(NDEF_Data));
-    WriteRegister_WordAddress(CONTROL_REG, RF_ENABLE);
+
+    WriteRegister_WordAddress(INTR_ENABLE_REG, END_OF_WRITE);
+    WriteRegister_WordAddress(CONTROL_REG, INTO_HIGH + INT_ENABLE + RF_ENABLE);
 }
 
 void UpdateDeviceStatus(void) {
@@ -128,16 +140,14 @@ void UpdateDeviceStatus(void) {
         return;
     }
     else {
-        WriteRegister_WordAddress(CONTROL_REG, 0x00); // Disable RF
+        WriteRegister_WordAddress(CONTROL_REG, 0x00); // Disable RF and interrupts
         memcpy(statusString_I2C+2, (unsigned char *)&(DeviceStatus), sizeof(DeviceStatus_t));
         WriteContinuous_I2C(statusString_I2C, sizeof(statusString_I2C));
-        WriteRegister_WordAddress(CONTROL_REG, RF_ENABLE);
+        WriteRegister_WordAddress(CONTROL_REG, INTO_HIGH + INT_ENABLE + RF_ENABLE);
     }
 }
 
 int ReadDeviceParams(StimParams_t *NewStimParams) {
-    char valuesChanged = 1;
-
     InitializeI2CSlave(RF430_ADDRESS);
 
     if ((ReadRegister_WordAddress(STATUS_REG) & (READY | RF_BUSY | CRC_ACTIVE)) != READY) {
@@ -147,8 +157,22 @@ int ReadDeviceParams(StimParams_t *NewStimParams) {
         WriteRegister_WordAddress(CONTROL_REG, 0x00); // Disable RF
         //__delay_cycles(20);
         ReadMemory_WordAddress(STIMPARAMS_ADDR, (unsigned char*)NewStimParams, sizeof(NewStimParams));
-        WriteRegister_WordAddress(CONTROL_REG, RF_ENABLE);
+        WriteRegister_WordAddress(CONTROL_REG, INTO_HIGH + INT_ENABLE + RF_ENABLE);
         return 1;
     }
 
+}
+
+void ClearNFCInterrupts(void) {
+    WriteRegister_WordAddress(INTR_FLAG_REG, END_OF_WRITE); // Clear end of write interrupt
+}
+
+
+// Port 1 interrupt service routine
+#pragma vector=PORT2_VECTOR
+__interrupt void Port_2(void)
+{
+  P2IFG &= ~RF430_INTR;   // P2.0 IFG cleared
+  if (RF430InterruptTriggered == 0)
+      RF430InterruptTriggered = 1;
 }

@@ -65,6 +65,7 @@ extern int disableStimulationFlag;
 #define S4 BIT4
 
 inline void SetupSwitchMatrix(void);
+inline void DisableStimulation (void);
 inline void EnableStimulation(void);
 inline void SetSwitchesOff(void);
 inline void SetSwitchesForward(void);
