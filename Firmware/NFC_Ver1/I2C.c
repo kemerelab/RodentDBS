@@ -59,7 +59,7 @@ inline void I2CSetup (void)
     UCB0CTL1 |= UCSWRST;                      // Enable SW reset
     UCB0CTL0 = UCMST + UCMODE_3 + UCSYNC;     // I2C Master, synchronous mode
     UCB0CTL1 = UCSSEL_2 + UCSWRST;            // Use SMCLK, keep SW reset
-    UCB0BR0 = 10;                             // fSCL = SMCLK(1MHz)/10 = ~100kHz
+    UCB0BR0 = 3;                             // fSCL = SMCLK(1MHz)/3 = ~333kHz
     UCB0BR1 = 0;
 }
 

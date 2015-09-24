@@ -66,7 +66,7 @@ void MasterClockSetup(void){
     TA1CCTL0 = CCIE;           // CCR0 interrupt enabled
 
     TA1CCTL2 = OUTMOD_7;           //CCR2 reset/set
-    TA1CCR2 = 100;   //pin 2.5 brightness (PWM duty cycle versus TA1CCR0)
+    TA1CCR2 = 900;   //pin 2.5 brightness (PWM duty cycle versus TA1CCR0)
 }
 
 inline void Blink(void) {
