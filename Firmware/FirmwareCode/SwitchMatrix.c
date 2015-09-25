@@ -38,30 +38,29 @@
  * This file contains the code which controls the switch matrix that creates the
  * biphasic current pulse.
  *
- *   Input Current --------  S3 \----------/ S1 ----|
- *                     |              |             |
- *                     |              V             |
- *                     |            BRAIN           |
- *                     |              ^             |
- *                     |              |             |
- *                     |---  S4 \-----|----/ S2 ----|------ GND
+ *   Input Current --------  S_IN1 \----------/ S_OUT1 ----|
+ *                     |                 |                 |
+ *                     |                 V                 |
+ *                     |               BRAIN               |
+ *                     |                 ^                 |
+ *                     |                 |                 |
+ *                     |---  S_IN2 \-----|----/ S_OUT2 ----|------ GND
  *
 */
 
 #include <msp430.h>
 #include "SwitchMatrix.h"
+#include "Board.h"
 
 stimulationStateEnum NextStimulationState = OFF;
 int disableStimulationFlag = 0;
 
 inline void SetupSwitchMatrix(void) {
     //switch pin setup
-    P1DIR |= S1 + S2 + S3 + S4;     //set pins 1.1, 1.2, 1.3, and 1.4 as outputs
+    P1DIR |= S_OUT1 + S_OUT2 + S_IN1 + S_IN2;     //set pins 1.1, 1.2, 1.3, and 1.4 as outputs
     SetSwitchesOff();
     disableStimulationFlag = 0;
-    //TA0CTL = TASSEL_2 + MC_2; // Use SMCLK for source (1 MHz)
-    BCSCTL3 |= LFXT1S_2;  // ACLK = LFXT1 = VLO
-    TA0CTL = TASSEL_1 + MC_2; // Use ACLK for source (1 MHz)
+    TA0CTL = TASSEL_2 + MC_2; // Use SMCLK for source (1 MHz)
 }
 
 inline void EnableStimulation(void) {
@@ -75,25 +74,25 @@ inline void DisableStimulation (void) {
 }
 
 inline void SetSwitchesOff(void) {
-    P1OUT &= ~(S1 + S2 + S3 + S4);
+    P1OUT &= ~(S_OUT1 + S_OUT2 + S_IN1 + S_IN2);
     NextStimulationState = OFF;
 }
 
 inline void SetSwitchesForward(void) {
-    P1OUT &= ~(S1 + S4);
-    P1OUT |= (S3 + S2);
+    P1OUT &= ~(S_OUT1 + S_IN2);
+    P1OUT |= (S_IN1 + S_OUT2);
     NextStimulationState = REVERSE;
 }
 
 inline void SetSwitchesReverse(void) {
-    P1OUT &= ~(S3 + S2);
-    P1OUT |= ~(S1 + S4);
+    P1OUT &= ~(S_IN1 + S_OUT2);
+    P1OUT |= ~(S_OUT1 + S_IN2);
     NextStimulationState = GROUNDED;
 }
 
 inline void SetSwitchesGround(void) {
-    P1OUT &= ~(S1 + S2 + S3 + S4);
-    P1OUT |= (S1 + S2);
+    P1OUT &= ~(S_OUT1 + S_OUT2 + S_IN1 + S_IN2);
+    P1OUT |= (S_OUT1 + S_OUT2);
     NextStimulationState = FORWARD;
 }
 

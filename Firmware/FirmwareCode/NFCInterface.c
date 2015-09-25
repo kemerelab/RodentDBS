@@ -42,6 +42,7 @@
 
 #include "NFCInterface.h"
 #include "Firmware.h"
+#include "Board.h"
 #include "I2C.h"
 #include "stdint.h"
 
@@ -74,24 +75,24 @@ volatile int RF430InterruptTriggered = 0;
 void NFCInterfaceSetup(void) {
     // Reset the RF430 using its reset pin. Normally on power up this wouldn't be necessary,
     // but it's good in case something has happened...
-    RF430_RESET_PSEL &= ~RF430_RESET;
-    RF430_RESET_PSEL2 &= ~RF430_RESET;
-    RF430_RESET_POUT &= ~RF430_RESET; // Reset pin is active low. Reset device
-    RF430_RESET_PDIR |= RF430_RESET;
+    RF430_RESET_PSEL &= ~RF430_RESET_PIN;
+    RF430_RESET_PSEL2 &= ~RF430_RESET_PIN;
+    RF430_RESET_POUT &= ~RF430_RESET_PIN; // Reset pin is active low. Reset device
+    RF430_RESET_PDIR |= RF430_RESET_PIN;
     __delay_cycles(1000); // Wait a bit
-    RF430_RESET_POUT |= RF430_RESET; // Release the RF430 to on
+    RF430_RESET_POUT |= RF430_RESET_PIN; // Release the RF430 to on
 
     __delay_cycles(100000);
 
-    RF430_INTR_PDIR &= ~RF430_INTR;     // Set INTR pin to input
-    RF430_INTR_PREN |= RF430_INTR;     // Enable pullup/down resistor
-    RF430_INTR_POUT &= ~RF430_INTR;     // Set pull DOWN resistor
-    RF430_INTR_PIES &= ~RF430_INTR;     // Low-to-high edge
-    RF430_INTR_PIFG &= ~RF430_INTR;     // IFG cleared
-    RF430_INTR_PIE |= RF430_INTR;       // Interrupt enabled
-    RF430_INTR_PIFG &= ~RF430_INTR;     // IFG cleared
+    RF430_INTR_PDIR &= ~RF430_INTR_PIN;     // Set INTR pin to input
+    RF430_INTR_PREN |= RF430_INTR_PIN;     // Enable pullup/down resistor
+    RF430_INTR_POUT &= ~RF430_INTR_PIN;     // Set pull DOWN resistor
+    RF430_INTR_PIES &= ~RF430_INTR_PIN;     // Low-to-high edge
+    RF430_INTR_PIFG &= ~RF430_INTR_PIN;     // IFG cleared
+    RF430_INTR_PIE |= RF430_INTR_PIN;       // Interrupt enabled
+    RF430_INTR_PIFG &= ~RF430_INTR_PIN;     // IFG cleared
 
-    InitializeI2CSlave(RF430_ADDRESS);
+    InitializeI2CSlave(RF430_I2C_ADDRESS);
 
     while(!(ReadRegister_WordAddress(STATUS_REG) & READY)); //wait until READY bit has been set
     /****************************************************************************/
@@ -134,7 +135,7 @@ void NFCInterfaceSetup(void) {
 void UpdateDeviceStatus(void) {
     unsigned char statusString_I2C[2 + sizeof(DeviceStatus_t)] = {0x00, STATUS_ADDR};
 
-    InitializeI2CSlave(RF430_ADDRESS);
+    InitializeI2CSlave(RF430_I2C_ADDRESS);
 
     if ((ReadRegister_WordAddress(STATUS_REG) & (READY | RF_BUSY | CRC_ACTIVE)) != READY) {
         return;
@@ -148,7 +149,7 @@ void UpdateDeviceStatus(void) {
 }
 
 int ReadDeviceParams(StimParams_t *NewStimParams) {
-    InitializeI2CSlave(RF430_ADDRESS);
+    InitializeI2CSlave(RF430_I2C_ADDRESS);
 
     if ((ReadRegister_WordAddress(STATUS_REG) & (READY | RF_BUSY | CRC_ACTIVE)) != READY) {
         return 0;
@@ -172,7 +173,7 @@ void ClearNFCInterrupts(void) {
 #pragma vector=PORT2_VECTOR
 __interrupt void Port_2(void)
 {
-  P2IFG &= ~RF430_INTR;   // P2.0 IFG cleared
+  P2IFG &= ~RF430_INTR_PIN;   // P2.0 IFG cleared
   if (RF430InterruptTriggered == 0)
       RF430InterruptTriggered = 1;
 }

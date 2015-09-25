@@ -51,6 +51,7 @@
 
 #include <msp430.h>
 #include "Firmware.h"
+#include "Board.h"
 #include "BatteryStatus.h"
 #include "SwitchMatrix.h"
 #include "I2C.h"
@@ -64,6 +65,8 @@ volatile uint32_t DeviceMasterClock;
 volatile unsigned char KernelWakeupFlag = 0;
 // This flag locks the main kernel timer from waking up a subprocess that has slept.
 
+// Initialize the device data. Descriptive - ID and firmware version; Status -
+//   uptime, battery voltage, and last update.
 volatile DeviceData_t DeviceData = {\
         .ID.idStr = DEFAULT_DEVICE_IDSTR, .ID.firmwareVersion = PROTOCOL_VERSION, \
         .Status.BatteryVoltage = 0, .Status.Uptime = 0, .Status.LastUpdate = 0,\
@@ -71,8 +74,16 @@ volatile DeviceData_t DeviceData = {\
         .StimParams.Amplitude = 100, .StimParams.PulseWidth = 60 };
 volatile DeviceStatus_t DeviceStatus = {.BatteryVoltage = 0, .Uptime = 0, .LastUpdate = 0};
 volatile int StimParamsChanged = 0;
-volatile int PowerLEDIntensity = 200; // Out of 1000
 
+
+/*
+ * Our main loop currently runs three different processes, (1) checking
+ * the battery power level, (2) checking for and responding to parameter
+ * changes via NFC, and (3) writing status information to the NFC chip.
+ * the PERIOD definition determines how regularly these processes take
+ * place (in ms).
+ *
+ */
 #define CHECK_BATTERY_PERIOD 60000 // 60 s
 volatile unsigned int CheckBatteryCounter = CHECK_BATTERY_PERIOD-1;
 
@@ -82,32 +93,33 @@ volatile unsigned int ReadNFCDataCounter = READ_NFC_DATA_PERIOD-1;
 #define UPDATE_NFC_DATA_PERIOD 3333
 volatile unsigned int UpdateNFCDataCounter = UPDATE_NFC_DATA_PERIOD-1;
 
+
+/*
+ * We use an LED to monitor device status. In addition to controlling intensity
+ * with PWM, we have the LED blink with a very short ON time. There are
+ * currently two blinking states, a "stimulation is off" blink at 2 Hz,
+ * a "stimulation is on" blink at 1 Hz.
+ *
+ */
+volatile int PowerLEDIntensity = 200; // Out of 1000
 volatile int LEDState = 0;
 #define HEARTBEAT_ON 25
 #define HEARTBEAT_OFF_STIM_OFF 475
 #define HEARTBEAT_OFF_STIM_ON 975
 unsigned int HeartBeatPattern[] = {HEARTBEAT_ON, HEARTBEAT_OFF_STIM_OFF}; // Stim off! stim on = 25/975
-const unsigned int BlinkPattern[] = {50,150,50,150,50,150,50,150,
-        50,150,50,150,50,150,50,150};
 volatile unsigned int LEDCounter = HEARTBEAT_ON;
-volatile int Blinking = 0;
 
 
 void MasterClockSetup(void){
-    P2DIR |= BIT5;          //initialize P2.5
-    P2SEL |= BIT5;          //select P2.5 as PWM outputs
-
-    TA1CCR0 = 1000;            // 1 ms period
     TA1CTL = TASSEL_2 + MC_1;  // SMCLK (1 MHz), up mode, enable interrupt
+    TA1CCR0 = 1000;            // 1 ms period
     TA1CCTL0 = CCIE;           // CCR0 interrupt enabled
 
+    // Initialize GPIO for status LED
+    STATUS_LED_PDIR |= STATUS_LED_PIN;    //initialize Status LED pin as output
+    STATUS_LED_PSEL |= STATUS_LED_PIN;    //select Status LED pin as PWM
     TA1CCTL2 = OUTMOD_7;           //CCR2 reset/set
     TA1CCR2 = PowerLEDIntensity;   //pin 2.5 brightness (PWM duty cycle versus TA1CCR0)
-}
-
-inline void Blink(void) {
-    if (Blinking == 0)
-        Blinking = 1;
 }
 
 inline void KernelSleep(void) {
@@ -130,7 +142,6 @@ void main(void)
     DCOCTL = CALDCO_1MHZ;    // Set DCO step + modulation
     BCSCTL3 |= LFXT1S_2;     // LFXT1 = VLO (~12 kHz)
     BCSCTL2 = DIVS_0;  // Setup SMCLK to be 1 MHz (divide DCO/1)
-
 
     // Default - initialize all ports to output
     P1DIR = 0xFF; P2DIR = 0xFF; P3DIR = 0xFF;
@@ -165,7 +176,6 @@ void main(void)
                     DeviceData.StimParams.Enabled = NewStimParams.Enabled;
                     if (NewStimParams.Enabled != 0) {
                         EnableStimulation();
-                        Blink();
                         HeartBeatPattern[1] = HEARTBEAT_OFF_STIM_ON;
                     }
                     else {
@@ -183,7 +193,6 @@ void main(void)
         else if (CheckBatteryCounter <= 0) {
             CheckBattery();
             CheckBatteryCounter = CHECK_BATTERY_PERIOD-1;
-            KernelSleep();
         }
 
         KernelSleep();
@@ -208,28 +217,16 @@ __interrupt void MasterClockISR (void)
     UpdateNFCDataCounter--;
     ReadNFCDataCounter--;
 
+    // Time variable for blinking LED
     LEDCounter--;
-    if (LEDCounter <= 0) {
-        if ((++LEDState & 0x01) == 0) {
+    if (LEDCounter == 0) {
+        if ((++LEDState & 0x01) == 0)
             TA1CCR2 = PowerLEDIntensity;   //pin 2.5 brightness (PWM duty cycle versus TA1CCR0)
-        }
-        else {
+        else
             TA1CCR2 = 0;   //pin 2.5 brightness (PWM duty cycle versus TA1CCR0)
-        }
 
-        if (Blinking == 1) {
-            LEDState &=  0x0F;
-            if (LEDState > 0 )
-                LEDCounter = BlinkPattern[LEDState];
-            else {
-                LEDCounter = HeartBeatPattern[LEDState];
-                Blinking = 0;
-            }
-        }
-        else {
-            LEDState &= 0x01;
-            LEDCounter = HeartBeatPattern[LEDState];
-        }
+        LEDState &= 0x01;
+        LEDCounter = HeartBeatPattern[LEDState];
     }
 
     if (KernelWakeupFlag == 0) { // If the master loop has gone to sleep then wake it up

@@ -35,41 +35,50 @@
  *
  *                       Rodent Stimulation Module (RSM) Firmware
  *
- * This file contains the code which controls the switch matrix that creates the
- * biphasic current pulse.
+ * Board.h
  *
- *   Input Current --------  S3 \----------/ S1 ----|
- *                     |              |             |
- *                     |              V             |
- *                     |            BRAIN           |
- *                     |              ^             |
- *                     |              |             |
- *                     |---  S4 \-----|----/ S2 ----|------ GND
+ *  Defines which map actual hardware pins to functionality
  *
-*/
-#ifndef SWITCHMATRIX_H_
-#define SWITCHMATRIX_H_
+ */
+#ifndef BOARD_H_
+#define BOARD_H_
 
-#include <msp430.h>
-#include "Firmware.h"
-#include "BatteryStatus.h"
+// Status LED
+#define STATUS_LED_PDIR P2DIR
+#define STATUS_LED_PSEL P2SEL
+#define STATUS_LED_POUT P2OUT
+#define STATUS_LED_PIN BIT5
 
-typedef enum {FORWARD, REVERSE, GROUNDED, OFF} stimulationStateEnum;
-extern stimulationStateEnum NextStimulationState;
+/* Pins which control the switch matrix. Assumed on Port 1.
+ *   Input Current --------  S_IN1 \----------/ S_OUT1 ----|
+ *                     |                 V                 |
+ *                     |               BRAIN               |
+ *                     |                 ^                 |
+ *                     |---  S_IN2 \-----|----/ S_OUT2 ----|------ GND */
+#define S_OUT1 BIT4
+#define S_OUT2 BIT3
+#define S_IN1 BIT1
+#define S_IN2 BIT4
 
-extern int disableStimulationFlag;
 
-#define S1 BIT4
-#define S2 BIT3
-#define S3 BIT1
-#define S4 BIT4
+// Reset and interrupt interface for RF430CCL330H (NFC IC)
+#define RF430_RESET_POUT  P2OUT
+#define RF430_RESET_PSEL  P2SEL
+#define RF430_RESET_PSEL2 P2SEL2
+#define RF430_RESET_PDIR  P2DIR
+#define RF430_RESET_PIN   BIT2
 
-inline void SetupSwitchMatrix(void);
-inline void DisableStimulation (void);
-inline void EnableStimulation(void);
-inline void SetSwitchesOff(void);
-inline void SetSwitchesForward(void);
-inline void SetSwitchesReverse(void);
-inline void SetSwitchesGround(void);
+#define RF430_INTR_POUT  P2OUT
+#define RF430_INTR_PSEL  P2SEL
+#define RF430_INTR_PSEL2 P2SEL2
+#define RF430_INTR_PDIR  P2DIR
+#define RF430_INTR_PREN  P2REN
+#define RF430_INTR_PIE   P2IE
+#define RF430_INTR_PIES  P2IES
+#define RF430_INTR_PIFG  P2IFG
+#define RF430_INTR_PIN   BIT0
 
-#endif
+
+
+
+#endif /* BOARD_H_ */
