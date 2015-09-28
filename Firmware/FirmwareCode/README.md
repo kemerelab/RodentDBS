@@ -27,10 +27,10 @@ is 1.2 mA. So expect consumption is 6 uA.
 
    - LED power = 6 uA
 
- **DS4432**
- Unfortunately, the current source has to be on all the time because turning on and off would
- essentially take the entire inter-pulse period (due to I2C transmission time). Hard to tell
- from the data sheet exactly what power will be. Max is 150 uA, but we expect a bit less.
+**DS4432**
+Unfortunately, the current source has to be on all the time because turning on and off would
+essentially take the entire inter-pulse period (due to I2C transmission time). Hard to tell
+from the data sheet exactly what power will be. Max is 150 uA, but we expect a bit less.
 
    - DS4432 power = 100 uA
 
