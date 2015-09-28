@@ -71,26 +71,16 @@ volatile DeviceData_t DeviceData = {\
         .ID.idStr = DEFAULT_DEVICE_IDSTR, .ID.firmwareVersion = PROTOCOL_VERSION, \
         .Status.BatteryVoltage = 0, .Status.Uptime = 0, .Status.LastUpdate = 0,\
         .StimParams.Enabled = 0, .StimParams.Period = 7500, \
-        .StimParams.Amplitude = 100, .StimParams.PulseWidth = 60 };
-volatile DeviceStatus_t DeviceStatus = {.BatteryVoltage = 0, .Uptime = 0, .LastUpdate = 0};
+        .StimParams.Amplitude = 100, .StimParams.PulseWidth = 60, \
+        .Status.BatteryVoltage = 0, .Status.Uptime = 0, .Status.LastUpdate = 0};
+//volatile DeviceStatus_t DeviceStatus = {.BatteryVoltage = 0, .Uptime = 0, .LastUpdate = 0};
 volatile int StimParamsChanged = 0;
 
-
 /*
- * Our main loop currently runs three different processes, (1) checking
- * the battery power level, (2) checking for and responding to parameter
- * changes via NFC, and (3) writing status information to the NFC chip.
- * the PERIOD definition determines how regularly these processes take
- * place (in ms).
- *
+ * State variables for main loop control.
  */
-#define CHECK_BATTERY_PERIOD 60000 // 60 s
-volatile unsigned int CheckBatteryCounter = CHECK_BATTERY_PERIOD-1;
-
-#define READ_NFC_DATA_PERIOD 30000 // 30 s
+volatile unsigned int CheckBatteryCounter = 50;
 volatile unsigned int ReadNFCDataCounter = READ_NFC_DATA_PERIOD-1;
-
-#define UPDATE_NFC_DATA_PERIOD 3333
 volatile unsigned int UpdateNFCDataCounter = UPDATE_NFC_DATA_PERIOD-1;
 
 
@@ -102,11 +92,11 @@ volatile unsigned int UpdateNFCDataCounter = UPDATE_NFC_DATA_PERIOD-1;
  *
  */
 volatile int PowerLEDIntensity = 200; // Out of 1000
-volatile int LEDState = 0;
+volatile unsigned int LEDState = 0;
 #define HEARTBEAT_ON 25
-#define HEARTBEAT_OFF_STIM_OFF 475
-#define HEARTBEAT_OFF_STIM_ON 975
-unsigned int HeartBeatPattern[] = {HEARTBEAT_ON, HEARTBEAT_OFF_STIM_OFF}; // Stim off! stim on = 25/975
+unsigned int HeartBeatPattern_StimOff[] = {HEARTBEAT_ON, 1500-HEARTBEAT_ON, HEARTBEAT_ON, 1500-HEARTBEAT_ON}; // (on, off, on, off)
+unsigned int HeartBeatPattern_StimOn[] = {HEARTBEAT_ON, 250, HEARTBEAT_ON, 1500 - 2*HEARTBEAT_ON - 250};
+unsigned int *HeartBeatPattern;
 volatile unsigned int LEDCounter = HEARTBEAT_ON;
 
 
@@ -120,6 +110,8 @@ void MasterClockSetup(void){
     STATUS_LED_PSEL |= STATUS_LED_PIN;    //select Status LED pin as PWM
     TA1CCTL2 = OUTMOD_7;           //CCR2 reset/set
     TA1CCR2 = PowerLEDIntensity;   //pin 2.5 brightness (PWM duty cycle versus TA1CCR0)
+
+    HeartBeatPattern = HeartBeatPattern_StimOff;
 }
 
 inline void KernelSleep(void) {
@@ -169,22 +161,26 @@ void main(void)
                         (unsigned char*)&(DeviceData.StimParams), sizeof(NewStimParams));
                 if (StimParamsChanged != 0) {
                     DisableStimulation();
+                    // NOTE - WE'RE NOT DOING ANY ERROR CHECKING! MAKE SURE PARAMETERS
+                    //   ARE ERROR CHECKED BEFORE TRANSMITTING!
                     DeviceData.StimParams.Period = NewStimParams.Period;
                     DeviceData.StimParams.Amplitude = NewStimParams.Amplitude;
                     SetOutputCurrent(DeviceData.StimParams.Amplitude);
                     DeviceData.StimParams.PulseWidth = NewStimParams.PulseWidth;
+                    DeviceData.StimParams.JitterLevel = NewStimParams.JitterLevel;
                     DeviceData.StimParams.Enabled = NewStimParams.Enabled;
                     if (NewStimParams.Enabled != 0) {
                         EnableStimulation();
-                        HeartBeatPattern[1] = HEARTBEAT_OFF_STIM_ON;
+                        HeartBeatPattern = HeartBeatPattern_StimOn;
                     }
                     else {
-                        HeartBeatPattern[1] = HEARTBEAT_OFF_STIM_OFF;
+                        HeartBeatPattern = HeartBeatPattern_StimOff;
                     }
-                    DeviceStatus.LastUpdate = DeviceStatus.Uptime;
+                    DeviceData.Status.LastUpdate = DeviceData.Status.Uptime;
                 }
             }
             ReadNFCDataCounter = READ_NFC_DATA_PERIOD-1;
+            KernelSleep();
         }
         else if (UpdateNFCDataCounter <= 0) {
             UpdateDeviceStatus();
@@ -208,7 +204,7 @@ __interrupt void MasterClockISR (void)
     static unsigned int SecondCounter = 1000;
 
     if (--SecondCounter == 0) {
-        DeviceStatus.Uptime += 1;
+        DeviceData.Status.Uptime += 1;
         SecondCounter = 1000;
     }
 
@@ -225,7 +221,7 @@ __interrupt void MasterClockISR (void)
         else
             TA1CCR2 = 0;   //pin 2.5 brightness (PWM duty cycle versus TA1CCR0)
 
-        LEDState &= 0x01;
+        LEDState &= 0x03; // faster than checking length
         LEDCounter = HeartBeatPattern[LEDState];
     }
 

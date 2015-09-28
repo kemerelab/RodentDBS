@@ -19,33 +19,51 @@ import java.util.List;
 class RSMDeviceInfoAtom {
     public String caption;
     public String datum;
-    public RSMDevice.UserSettings settingsType;
+    public RSMDevice.SettingsType settingsType;
+    public int datumValue;
+    public boolean isHeader;
 
-    public RSMDeviceInfoAtom(String _caption, String _datum, RSMDevice.UserSettings _settingsType) {
+    public RSMDeviceInfoAtom(String _caption, String _datum, RSMDevice.SettingsType _settingsType) {
         caption = _caption; datum = _datum; settingsType = _settingsType;
+        isHeader = false; datumValue = -1;
+    }
+
+    public RSMDeviceInfoAtom(String _caption, int _datumValue, RSMDevice.SettingsType _settingsType) {
+        caption = _caption; settingsType = _settingsType; datumValue = _datumValue;
+        isHeader = false; datum = "";
+    }
+
+    public RSMDeviceInfoAtom(String _caption, RSMDevice.SettingsType _settingsType) {
+        caption = _caption; isHeader = true; settingsType = _settingsType;
+        datum = ""; datumValue = -1;
     }
 }
 
 public class RSMDevice implements Parcelable {
 
+    // Constants
+    private int currentSourceRangeResistor;
+    public Boolean isValid = false;
+
+    public enum SettingsType {NA, STATUS_ATOM, DEVICE_ID,
+        ENABLE_STIMULATION, AMPLITUDE, FREQUENCY, PULSE_WIDTH, JITTER_LEVEL
+    };
+
+    // Device identification information
     private byte[] deviceID;
     private byte firmwareVersion;
 
+    // Stimulation control parameters
     private byte stimulationEnabled; // true or false
     private short stimulationWidth; // length of each phase of biphasic pulse in us
     private short stimulationPeriod; // in us
     private byte stimulationCurrentSetting; // follow formula! actual amplitude = 0.997 / (16 * 47 K) * sA
-    private int currentSourceRangeResistor;
+    private byte jitterLevel; // in us - can be 0, 1, 2, or 3 (corresponding to 0, 1 ms, 2 ms, and 4 ms)
 
+    // Device status information
     private Integer uptime; // system uptime in seconds
     private Integer lastUpdate; // time since last update of data in seconds
-    private short batteryVoltage; // battery voltage in millivolts
-
-
-    public Boolean isValid = false;
-
-    public enum UserSettings  {NA, STATUS_ATOM,
-        DEVICE_ID, ENABLE_STIMULATION, AMPLITUDE, FREQUENCY, PULSE_WIDTH};
+    private short batteryVoltage; // battery voltage in value from ADC
 
 
     public RSMDevice() {
@@ -55,10 +73,11 @@ public class RSMDevice implements Parcelable {
         stimulationPeriod = 10000;
         stimulationCurrentSetting = 0;
         stimulationWidth = 60;
+        jitterLevel = 0;
         uptime = 0;
         lastUpdate = 0;
         batteryVoltage = 0;
-        firmwareVersion = 1;
+        firmwareVersion = 5;
         isValid = false;
         currentSourceRangeResistor = 47000;
     }
@@ -69,6 +88,7 @@ public class RSMDevice implements Parcelable {
         stimulationPeriod = 10000;
         stimulationCurrentSetting = 0;
         stimulationWidth = 0;
+        jitterLevel = 0;
         uptime = 0;
         lastUpdate = 0;
         batteryVoltage = 0;
@@ -82,21 +102,21 @@ public class RSMDevice implements Parcelable {
         try {
             firmwareVersion = buf.get();
             buf.get(deviceID); // deviceID is size 4!
-            stimulationEnabled = buf.get();
-            stimulationPeriod = buf.getShort();
-            switch (firmwareVersion) {
-                case 3:
+            stimulationEnabled = buf.get(); // uint8_t
+            stimulationPeriod = buf.getShort(); // uint16_t
+            if (firmwareVersion == 3)
                     stimulationCurrentSetting = (byte) buf.getShort();
-                    break;
-                case 4:
-                default:
-                    stimulationCurrentSetting = buf.get();
-                    break;
-            }
-            stimulationWidth = buf.getShort();
-            batteryVoltage = buf.getShort();
-            uptime = buf.getInt();
-            lastUpdate = buf.getInt();
+            else
+                stimulationCurrentSetting = buf.get(); // uint8_t
+
+            stimulationWidth = buf.getShort(); // uint16_t
+
+            if (firmwareVersion > 4)
+                jitterLevel = buf.get(); // uint8_t
+
+            batteryVoltage = buf.getShort();  // uint16_t
+            uptime = buf.getInt();  // uint32_t
+            lastUpdate = buf.getInt();  // uint32_t
             isValid = true;
         } catch (Exception e) {
             e.printStackTrace(); // buffer underflow, for e.g.
@@ -111,8 +131,11 @@ public class RSMDevice implements Parcelable {
                 buf = ByteBuffer.allocate(21); // hard coded for current data string!
                 break;
             case 4:
-            default:
                 buf = ByteBuffer.allocate(22); // hard coded for current data string!
+                break;
+            case 5:
+            default:
+                buf = ByteBuffer.allocate(23); // hard coded for current data string!
                 break;
         }
 
@@ -131,6 +154,7 @@ public class RSMDevice implements Parcelable {
                 break;
         }
         buf.putShort((short) stimulationWidth);
+        buf.put(jitterLevel);
         buf.putShort((short) 0); // battery voltage will get reset by device
         buf.putInt(0); // uptime will get reset by device
         buf.putInt(0); // lastUpdate will get reset by device
@@ -229,17 +253,17 @@ public class RSMDevice implements Parcelable {
 
     }
 
-    public String getLastUpdateString() {
-        if (lastUpdate > 0) {
-            // uptime is in seconds. convert to hr:min:ss
-            Integer hr = lastUpdate / 3600;
-            Integer min = (lastUpdate - hr * 3600) / 60;
-            Integer ss = lastUpdate - hr * 3600 - min * 60;
-            return String.format("%d:%02d:%02d", hr, min, ss);
-        }
-        else
-            return "no data";
+    public int getJitterLevel() {
+        return jitterLevel;
     }
+
+    public void setJitterLevel(int _jitterLevel) {
+        if ((_jitterLevel >= 0) && (_jitterLevel <= 3))
+            jitterLevel = (byte) _jitterLevel;
+        else
+            jitterLevel = 0;
+    }
+
 
     public String getUptimeString() {
         if (uptime < 0) {
@@ -254,6 +278,18 @@ public class RSMDevice implements Parcelable {
         }
     }
 
+    public String getLastUpdateString() {
+        if (lastUpdate > 0) {
+            // uptime is in seconds. convert to hr:min:ss
+            Integer hr = lastUpdate / 3600;
+            Integer min = (lastUpdate - hr * 3600) / 60;
+            Integer ss = lastUpdate - hr * 3600 - min * 60;
+            return String.format("%d:%02d:%02d", hr, min, ss);
+        }
+        else
+            return "no data";
+    }
+
     public String getBatteryVoltageString() {
         if (batteryVoltage > 0)
             return String.valueOf((int) batteryVoltage * 2500 * 2 / 1024);
@@ -265,35 +301,37 @@ public class RSMDevice implements Parcelable {
         List deviceInfoList = new ArrayList<RSMDeviceInfoAtom>();
 
         Resources res = context.getResources();
-        deviceInfoList.add(new RSMDeviceInfoAtom("Device Info", "", UserSettings.NA));
+        deviceInfoList.add(new RSMDeviceInfoAtom("Device Info", SettingsType.NA));
         deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.deviceIDlabel),
-                getDeviceID(),  UserSettings.DEVICE_ID));
+                getDeviceID(),  SettingsType.DEVICE_ID));
         deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.firmwareLabel),
-                Byte.toString(firmwareVersion), UserSettings.STATUS_ATOM));
+                Byte.toString(firmwareVersion), SettingsType.STATUS_ATOM));
 
-        deviceInfoList.add(new RSMDeviceInfoAtom("Stimulation Settings", "", UserSettings.NA));
+        deviceInfoList.add(new RSMDeviceInfoAtom("Stimulation Settings", SettingsType.NA));
         deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.stimEnabledLabel),
-                getStimulationEnabledState(), UserSettings.ENABLE_STIMULATION));
+                getStimulationEnabledState(), SettingsType.ENABLE_STIMULATION));
         deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.stimAmplitudeLabel),
-                getAmplitudeString() + " µV", UserSettings.AMPLITUDE));
+                getAmplitudeString() + " µV", SettingsType.AMPLITUDE));
         deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.stimFrequencyLabel),
-                getStimFrequencyString() + " Hz", UserSettings.FREQUENCY));
+                getStimFrequencyString() + " Hz", SettingsType.FREQUENCY));
         deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.pulseWidthLabel),
-                Short.toString(stimulationWidth) + " µs", UserSettings.PULSE_WIDTH));
+                Short.toString(stimulationWidth) + " µs", SettingsType.PULSE_WIDTH));
+        deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.jitterLabel),
+                getJitterLevel(), SettingsType.JITTER_LEVEL));
 
-        deviceInfoList.add(new RSMDeviceInfoAtom("Device Status", "", UserSettings.STATUS_ATOM));
+        deviceInfoList.add(new RSMDeviceInfoAtom("Device Status", SettingsType.STATUS_ATOM));
         deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.uptimeLabel),
-                getUptimeString(), UserSettings.STATUS_ATOM));
+                getUptimeString(), SettingsType.STATUS_ATOM));
         deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.batteryVoltageLabel),
-                getBatteryVoltageString() +" mV",  UserSettings.STATUS_ATOM));
+                getBatteryVoltageString() +" mV",  SettingsType.STATUS_ATOM));
         deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.lastUpdateLabel),
-                getLastUpdateString(),UserSettings.STATUS_ATOM));
+                getLastUpdateString(), SettingsType.STATUS_ATOM));
 
         return deviceInfoList;
     }
 
 
-    public void showSettingsDialog(Context context, UserSettings whichSetting) {
+    public void showSettingsDialog(Context context, SettingsType whichSetting) {
 
     }
 
@@ -309,6 +347,7 @@ public class RSMDevice implements Parcelable {
         out.writeInt(stimulationPeriod);
         out.writeInt(stimulationCurrentSetting);
         out.writeInt(stimulationWidth);
+        out.writeByte(jitterLevel);
         out.writeInt(currentSourceRangeResistor);
     }
 
@@ -336,6 +375,7 @@ public class RSMDevice implements Parcelable {
         stimulationPeriod = (short) in.readInt();
         stimulationCurrentSetting = (byte) in.readInt();
         stimulationWidth = (short) in.readInt();
+        jitterLevel = in.readByte();
         currentSourceRangeResistor = in.readInt();
 
     }

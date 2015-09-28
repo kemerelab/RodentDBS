@@ -35,26 +35,17 @@
  *
  *                       Rodent Stimulation Module (RSM) Firmware
  *
- * Battery Status Code
- *
- * This file contains the code required to use the internal voltage references
- * to measure the battery voltage
- *
- * Resources:
- *  - Uses Pins 1.0-1.3 for control of switch array
+ * This file contains a table of random numbers from 0-3999. These are used as
+ *  random jitter added to the stimulation period. We also will divide these
+ *  values by 2 or 4 to generate random numbers from 0-1999 and 0-999.
  *
 */
 
-#ifndef RATDBS_FIRMWARE_BATTERYSTATUS_H_
-#define RATDBS_FIRMWARE_BATTERYSTATUS_H_
+#include "SwitchMatrix.h"
 
-#include <msp430.h>
+unsigned int jitterTableCounter = 0;
+const unsigned int jitterValueTable[] = {0, 3999, 1999, 100};
+const unsigned int jitterTableLength = sizeof(jitterValueTable) / sizeof(jitterValueTable[0]);
 
-extern int BatteryVoltage;
 
-void BatteryStatusSetup(void);  // Setup ADC10 and initialize values
-
-void CheckBattery(void);
-
-#endif
 

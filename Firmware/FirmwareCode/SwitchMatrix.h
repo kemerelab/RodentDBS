@@ -47,8 +47,8 @@
  *                     |---  S_IN2 \-----|----/ S_OUT2 ----|------ GND
  *
 */
-#ifndef SWITCHMATRIX_H_
-#define SWITCHMATRIX_H_
+#ifndef RATDBS_FIRMWARE_SWITCHMATRIX_H_
+#define RATDBS_FIRMWARE_SWITCHMATRIX_H_
 
 #include <msp430.h>
 #include "Firmware.h"
@@ -58,6 +58,10 @@ typedef enum {FORWARD, REVERSE, GROUNDED, OFF} stimulationStateEnum;
 extern stimulationStateEnum NextStimulationState;
 
 extern int disableStimulationFlag;
+
+extern unsigned int jitterTableCounter;
+extern const unsigned int jitterValueTable[];
+extern const unsigned int jitterTableLength;
 
 inline void SetupSwitchMatrix(void);
 inline void DisableStimulation (void);

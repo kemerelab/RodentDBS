@@ -40,8 +40,8 @@
  *
 */
 
-#ifndef I2C_H_
-#define I2C_H_
+#ifndef RATDBS_FIRMWARE_I2C_H_
+#define RATDBS_FIRMWARE_I2C_H_
 
 #include <msp430.h>
 #include "I2C.h"

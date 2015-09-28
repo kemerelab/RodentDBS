@@ -45,7 +45,9 @@
 #include <msp430.h>
 #include "BatteryStatus.h"
 #include "Firmware.h"
+#include "NFCInterface.h"
 
+int BatteryUpdateCounter = 0;
 /*
  * Initialize the ADC10 to prepare to measure the battery voltage.
  */
@@ -64,12 +66,18 @@ void CheckBattery(void) {
                                 // and will result in the ISR when data ready
     __bis_SR_register(CPUOFF + GIE); // Enter LPM0 w/ interrupts (will stall here
                                             // until ADC finishes).
+#ifdef MAKE_BATTERY_LIFE_RECORD
+    if (BatteryUpdateCounter++ == 0)
+        WriteBatteryRecord();
+    else if (BatteryUpdateCounter >= BATTERY_UPDATE_PERIOD)
+        BatteryUpdateCounter = 0;
+#endif
 }
 
 #pragma vector=ADC10_VECTOR
 __interrupt void ADC10_ISR(void)
 {
-    DeviceStatus.BatteryVoltage = ADC10MEM;
+    DeviceData.Status.BatteryVoltage = ADC10MEM;
     ADC10CTL0 &= ~ENC;      //disable ADC
     ADC10CTL0 &= ~(REFON + ADC10ON + ADC10IE); // and then shutdown completely
     __bic_SR_register_on_exit(CPUOFF); // Exit LPM0

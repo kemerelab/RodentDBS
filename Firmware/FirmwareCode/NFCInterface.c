@@ -46,33 +46,39 @@
 #include "I2C.h"
 #include "stdint.h"
 
-struct I2C_NDEF_FullRecord NDEF_Data = { \
-        .MemoryAddress = {0x00, 0x00}, \
-        .ND.TagApplicationName={0xD2, 0x76, 0x00, 0x00, 0x85, 0x01, 0x01}, \
-        .ND.CapContainer.FileID = {0xE1, 0x03}, \
-        .ND.CapContainer.Len = {0x00, 0x0F}, \
-        .ND.CapContainer.MappingVersion = 0x20, \
-        .ND.CapContainer.MLe = {0x00, 0xF9}, \
-        .ND.CapContainer.MLc = {0x00, 0xF6}, \
-        .ND.CapContainer.TLV.Tag = 0x04, \
-        .ND.CapContainer.TLV.Len = 0x06, \
-        .ND.CapContainer.TLV.FileID = {0xE1, 0x04}, \
-        .ND.CapContainer.TLV.MaxFileSize = {0x0B, 0xDF}, \
-        .ND.CapContainer.TLV.ReadAccess = 0x00, \
-        .ND.CapContainer.TLV.WriteAccess = 0x00, \
-        .ND.RecordHeader.FileID = {0xE1, 0x04}, \
-        .ND.RecordHeader.NLen = {0x00, 3 + \
-                sizeof(EXTERNAL_RECORD_TYPE_NAME) - 1 + \
-                sizeof(DeviceData_t)}, \
-        .ND.RecordHeader.Flags = 0xD4,\
-        .ND.RecordHeader.RecordTypeLength = sizeof(EXTERNAL_RECORD_TYPE_NAME) - 1, \
-        .ND.RecordHeader.PayloadLength = sizeof(DeviceData_t), \
-        .ND.RecordHeader.TypeName = EXTERNAL_RECORD_TYPE_NAME, \
+I2C_NDEF_FullRecord NDEF_Data = {
+        .MemoryAddress = {0x00, 0x00},
+        .ND.TagApplicationName={0xD2, 0x76, 0x00, 0x00, 0x85, 0x01, 0x01},
+        .ND.CapContainer.FileID = {0xE1, 0x03},
+        .ND.CapContainer.Len = {0x00, 0x0F},
+        .ND.CapContainer.MappingVersion = 0x20,
+        .ND.CapContainer.MLe = {0x00, 0xF9},
+        .ND.CapContainer.MLc = {0x00, 0xF6},
+        .ND.CapContainer.TLV.Tag = 0x04,
+        .ND.CapContainer.TLV.Len = 0x06,
+        .ND.CapContainer.TLV.FileID = {0xE1, 0x04},
+        .ND.CapContainer.TLV.MaxFileSize = {0x0B, 0xDF},
+        .ND.CapContainer.TLV.ReadAccess = 0x00,
+        .ND.CapContainer.TLV.WriteAccess = 0x00,
+        .ND.RecordHeader.FileID = {0xE1, 0x04},
+        .ND.RecordHeader.NLen = {RECORD_SIZE >> 8, RECORD_SIZE & 0xFF},
+        .ND.RecordHeader.RecordTypeLength = sizeof(EXTERNAL_RECORD_TYPE_NAME) - 1,
+#ifdef MAKE_BATTERY_RECORD
+        .ND.RecordHeader.Flags = 0xC4, // SR = 0
+        .ND.RecordHeader.PayloadLength = {0,0,PAYLOAD_SIZE >> 8,PAYLOAD_SIZE & 0xFF},
+#else
+        .ND.RecordHeader.Flags = 0xD4, // SR = 1
+        .ND.RecordHeader.PayloadLength = PAYLOAD_SIZE,
+#endif
+        .ND.RecordHeader.TypeName = EXTERNAL_RECORD_TYPE_NAME
 };
+
+
 
 volatile int RF430InterruptTriggered = 0;
 
 void NFCInterfaceSetup(void) {
+
     // Reset the RF430 using its reset pin. Normally on power up this wouldn't be necessary,
     // but it's good in case something has happened...
     RF430_RESET_PSEL &= ~RF430_RESET_PIN;
@@ -82,7 +88,7 @@ void NFCInterfaceSetup(void) {
     __delay_cycles(1000); // Wait a bit
     RF430_RESET_POUT |= RF430_RESET_PIN; // Release the RF430 to on
 
-    __delay_cycles(100000);
+    __delay_cycles(100000); // Wait for RF430 to boot
 
     RF430_INTR_PDIR &= ~RF430_INTR_PIN;     // Set INTR pin to input
     RF430_INTR_PREN |= RF430_INTR_PIN;     // Enable pullup/down resistor
@@ -125,27 +131,17 @@ void NFCInterfaceSetup(void) {
     }
 
     //write NDEF memory with full Capability Container + NDEF message
-    memcpy(&(NDEF_Data.ND.BinaryMessage), (unsigned char *)&DeviceData, sizeof(DeviceData));
+    NDEF_Data.ND.DeviceData = DeviceData;
+//    memcpy(&(NDEF_Data.ND.BinaryMessage), (unsigned char *)&DeviceData, sizeof(DeviceData));
     WriteContinuous_I2C((unsigned char *)(&NDEF_Data), sizeof(NDEF_Data));
 
     WriteRegister_WordAddress(INTR_ENABLE_REG, END_OF_WRITE);
     WriteRegister_WordAddress(CONTROL_REG, INTO_HIGH + INT_ENABLE + RF_ENABLE);
 }
 
-void UpdateDeviceStatus(void) {
-    unsigned char statusString_I2C[2 + sizeof(DeviceStatus_t)] = {0x00, STATUS_ADDR};
 
-    InitializeI2CSlave(RF430_I2C_ADDRESS);
-
-    if ((ReadRegister_WordAddress(STATUS_REG) & (READY | RF_BUSY | CRC_ACTIVE)) != READY) {
-        return;
-    }
-    else {
-        WriteRegister_WordAddress(CONTROL_REG, 0x00); // Disable RF and interrupts
-        memcpy(statusString_I2C+2, (unsigned char *)&(DeviceStatus), sizeof(DeviceStatus_t));
-        WriteContinuous_I2C(statusString_I2C, sizeof(statusString_I2C));
-        WriteRegister_WordAddress(CONTROL_REG, INTO_HIGH + INT_ENABLE + RF_ENABLE);
-    }
+void ClearNFCInterrupts(void) {
+    WriteRegister_WordAddress(INTR_FLAG_REG, END_OF_WRITE); // Clear end of write interrupt
 }
 
 int ReadDeviceParams(StimParams_t *NewStimParams) {
@@ -164,9 +160,84 @@ int ReadDeviceParams(StimParams_t *NewStimParams) {
 
 }
 
-void ClearNFCInterrupts(void) {
-    WriteRegister_WordAddress(INTR_FLAG_REG, END_OF_WRITE); // Clear end of write interrupt
+#ifdef MAKE_BATTERY_LIFE_RECORD
+I2C_DataRecord DataRecord_I2C = {.MemoryAddress = {0x00, EXTERNAL_RECORD_HEADER_ADDR}, \
+        .RecordHeader.FileID = {0xE1, 0x04}, \
+        .RecordHeader.NLen = {RECORD_SIZE >> 8, RECORD_SIZE & 0xFF}, \
+        .RecordHeader.Flags = 0xC4,\
+        .RecordHeader.RecordTypeLength = sizeof(EXTERNAL_RECORD_TYPE_NAME) - 1, \
+        .RecordHeader.PayloadLength = {0,0,PAYLOAD_SIZE >> 8,PAYLOAD_SIZE & 0xFF}, \
+        .RecordHeader.TypeName = EXTERNAL_RECORD_TYPE_NAME, \
+        };
+#else
+I2C_StatusRecord Status_I2C = {.MemoryAddress = {0x00, STATUS_ADDR}};
+#endif
+
+void UpdateDeviceStatus(void) {
+
+#ifdef MAKE_BATTERY_LIFE_RECORD
+    DataRecord_I2C.DevData = DeviceData;
+#else
+    Status_I2C.Status = DeviceData.Status;
+#endif
+
+    InitializeI2CSlave(RF430_I2C_ADDRESS);
+//    memcpy(&(DataRecord_I2C.DevData), (unsigned char *)&(DeviceData), sizeof(DeviceData_t));
+//    memcpy(statusString_I2C+2, (unsigned char *)&(DeviceData.Status), sizeof(DeviceStatus_t));
+
+    if ((ReadRegister_WordAddress(STATUS_REG) & (READY | RF_BUSY | CRC_ACTIVE)) != READY) {
+        return;
+    }
+    else {
+        WriteRegister_WordAddress(CONTROL_REG, 0x00); // Disable RF and interrupts
+#ifdef MAKE_BATTERY_LIFE_RECORD
+        WriteContinuous_I2C((unsigned char *)&DataRecord_I2C, sizeof(I2C_DataRecord));
+#else
+        WriteContinuous_I2C((unsigned char *)&Status_I2C, sizeof(I2C_StatusRecord));
+#endif
+        WriteRegister_WordAddress(CONTROL_REG, INTO_HIGH + INT_ENABLE + RF_ENABLE);
+    }
 }
+
+#ifdef MAKE_BATTERY_LIFE_RECORD
+
+void WriteBatteryRecord() {
+    static int BatteryStatusIdx = 0;
+
+    unsigned char data_i2c[] = {0x00, BATTERY_RECORDS_ADDR, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01};
+    unsigned int address = BATTERY_RECORDS_ADDR + BatteryStatusIdx * BATTERY_RECORD_SIZE;
+
+    data_i2c[0] = address >> 8;
+    data_i2c[1] = address & 0xFF;
+
+    data_i2c[2] = DeviceData.Status.Uptime & 0xFF;
+    data_i2c[3] = (DeviceData.Status.Uptime >> 8) & 0xFF;
+    data_i2c[4] = (DeviceData.Status.Uptime >> 16)  & 0xFF;
+    data_i2c[5] = DeviceData.Status.Uptime >> 24;
+
+    data_i2c[6] = DeviceData.Status.BatteryVoltage & 0xFF;
+    data_i2c[7] = DeviceData.Status.BatteryVoltage >> 8;
+
+
+    memcpy(&(DataRecord_I2C.DevData), (unsigned char *)&(DeviceData), sizeof(DeviceData_t));
+
+    InitializeI2CSlave(RF430_I2C_ADDRESS);
+
+    if ((ReadRegister_WordAddress(STATUS_REG) & (READY | RF_BUSY | CRC_ACTIVE)) != READY) {
+        return;
+    }
+    else {
+        WriteRegister_WordAddress(CONTROL_REG, 0x00); // Disable RF and interrupts
+        WriteContinuous_I2C((unsigned char *)&DataRecord_I2C, sizeof(I2C_DataRecord));
+        WriteContinuous_I2C(data_i2c, 2 + BATTERY_RECORD_SIZE);
+        WriteRegister_WordAddress(CONTROL_REG, INTO_HIGH + INT_ENABLE + RF_ENABLE);
+    }
+
+    BatteryStatusIdx++;
+    if (BatteryStatusIdx >= BATTERY_RECORDS)
+        BatteryStatusIdx = 0;
+}
+#endif
 
 
 // Port 1 interrupt service routine

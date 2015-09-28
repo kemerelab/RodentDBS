@@ -11,6 +11,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -21,12 +22,13 @@ import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.NumberPicker;
+import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
 
-public class MainActivity extends NfcReaderActivity implements AdapterView.OnItemClickListener {
+public class MainActivity extends NfcReaderActivity implements AdapterView.OnItemClickListener, RSMDeviceInfoListAdapter.RSMDeviceInfoSpinnerSelectionListener {
 
 
     static final String RSM_DEVICE_STRUCTURE = "rsmDevice";
@@ -53,10 +55,10 @@ public class MainActivity extends NfcReaderActivity implements AdapterView.OnIte
         } else {
             // Probably initialize members with default values for a new instance
             rsmDevice = new RSMDevice();
+
         }
 
         setContentView(R.layout.activity_main);
-
         updateStatus(nfcAvalability);
         updateDeviceDisplay();
         updateDeviceInfoEditState();
@@ -67,11 +69,14 @@ public class MainActivity extends NfcReaderActivity implements AdapterView.OnIte
 
     @Override
     public void onSaveInstanceState(Bundle savedInstanceState) {
-        // Save the current state of the
         savedInstanceState.putParcelable(RSM_DEVICE_STRUCTURE, rsmDevice);
-
-        // Always call the superclass so it can save the view hierarchy state
         super.onSaveInstanceState(savedInstanceState);
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        rsmDevice = savedInstanceState.getParcelable(MainActivity.RSM_DEVICE_STRUCTURE);
     }
 
     @Override
@@ -105,16 +110,6 @@ public class MainActivity extends NfcReaderActivity implements AdapterView.OnIte
         toast.setGravity(Gravity.CENTER_HORIZONTAL | Gravity.CENTER_VERTICAL, 0, 0);
         toast.show();
     }
-
-    public void onEnableSwitchToggled (View view) {
-        if (((Switch) view).isChecked()) {
-            rsmDevice.enableStimulation();
-        }
-        else {
-            rsmDevice.disableStimulation();
-        }
-    }
-
 
     public void onEditSwitchToggled (View view) {
         if (((Switch) view).isChecked()) {
@@ -150,12 +145,14 @@ public class MainActivity extends NfcReaderActivity implements AdapterView.OnIte
                 case AVAILABLE_NOT_ENABLED:
                 default:
                     s.setBackgroundColor(getResources().getColor(R.color.BackgroundLightRed));
+
                     break;
             }
        }
         else {
             s.setBackgroundColor(Color.WHITE);
         }
+        updateDeviceDisplay();
     }
 
     public void updateRSMDeviceValues() {
@@ -185,111 +182,116 @@ public class MainActivity extends NfcReaderActivity implements AdapterView.OnIte
         updateDeviceInfoEditState();
     }
 
-    public void updateStatus(String message) {
-        TextView t = (TextView) findViewById(R.id.statusTextView);
-        if ( t!= null) {
-            t.setText(getString(R.string.nfcAvailableEnabled));
-            t.setTextColor(getResources().getColor(R.color.LightBlue));
-        }
-    }
-
-
-
     public void updateDeviceDisplay() {
         ListView lv = (ListView) findViewById(R.id.deviceInfoListView);
+        lv.setEnabled(editingDeviceInfo);
         RSMDeviceInfoListAdapter devAdapter = new RSMDeviceInfoListAdapter(this,
-                rsmDevice.getDeviceInfoList(this));
+                rsmDevice.getDeviceInfoList(this), false, editingDeviceInfo);
         lv.setAdapter(devAdapter);
         lv.setOnItemClickListener(this);
+        devAdapter.setSpinnerListener(this);
+    }
+
+    public void onSpinnerSelectionListener(RSMDevice.SettingsType settingsType, int spinnerPosition) {
+        if (settingsType == RSMDevice.SettingsType.JITTER_LEVEL) {
+            rsmDevice.setJitterLevel(spinnerPosition);
+        }
     }
 
     @Override
     public void onItemClick(AdapterView<?> adapter, View view, int position,
                             long id) {
+
+
         RSMDeviceInfoAtom atom = (RSMDeviceInfoAtom) adapter.getItemAtPosition(position);
-        if ((!editingDeviceInfo) | (atom.settingsType == RSMDevice.UserSettings.NA)) {
+        if ((!editingDeviceInfo) | (atom.settingsType == RSMDevice.SettingsType.NA)) {
             return;
         }
 
-        if (atom.settingsType != RSMDevice.UserSettings.ENABLE_STIMULATION) {
-
-            AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            // Get the layout inflater
-            final RSMDevice.UserSettings ws = atom.settingsType;
-            LayoutInflater inflater = this.getLayoutInflater();
-
-            // Inflate and set the layout for the dialog
-
-            View v = inflater.inflate(R.layout.settings_dialog, null);
-            final NumberPicker amp = (NumberPicker) v.findViewById(R.id.stimAmplitudeNumberPicker);
-            final NumberPicker freq = (NumberPicker) v.findViewById(R.id.stimCurrentNumberPicker);
-            final NumberPicker pulWid = (NumberPicker) v.findViewById(R.id.pulseWidthNumberPicker);
-            final EditText devId = (EditText) v.findViewById(R.id.deviceIDEditText);
-
-            switch (ws) {
-                case AMPLITUDE:
-                    amp.setMaxValue((int) rsmDevice.getMaxAmplitude());
-                    amp.setMinValue(0);
-                    amp.setValue(Integer.parseInt(rsmDevice.getAmplitudeString()));
-                    amp.setVisibility(View.VISIBLE);
-                    break;
-                case FREQUENCY:
-                    freq.setMaxValue((int) 200);
-                    freq.setMinValue((int) rsmDevice.getMinFrequency());
-                    freq.setValue(Integer.parseInt(rsmDevice.getStimFrequencyString()));
-                    freq.setVisibility(View.VISIBLE);
-                    break;
-                case PULSE_WIDTH:
-                    pulWid.setMaxValue(100);
-                    pulWid.setMinValue(20);
-                    pulWid.setValue(rsmDevice.getPulseWidth());
-                    pulWid.setVisibility(View.VISIBLE);
-                    break;
-                case DEVICE_ID:
-                    devId.setVisibility(View.VISIBLE);
-                    break;
-                case NA:
-                default:
-                    break;
-
-            }
-
-            // Pass null as the parent view because its going in the dialog layout
-            builder.setView(v)
-                    // Add action buttons
-                    .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int id) {
-
-                            switch (ws) {
-                                case AMPLITUDE:
-                                    rsmDevice.setStimCurrent(amp.getValue());
-                                    break;
-                                case FREQUENCY:
-                                    rsmDevice.setStimPeriod(freq.getValue());
-                                    break;
-                                case PULSE_WIDTH:
-                                    rsmDevice.setPulseWidth((short) pulWid.getValue());
-                                    break;
-                                case DEVICE_ID:
-                                    rsmDevice.setDeviceID(devId.getText().toString());
-                                    break;
-                                case NA:
-                                default:
-                                    break;
-
-                            }
-                            updateDeviceDisplay();
-                        }
-                    })
-                    .setNegativeButton(R.string.cancel, null);
-            builder.show();
-
-        }
-        else { // Process tapping "Enable Stimulation"
+        if (atom.settingsType == RSMDevice.SettingsType.ENABLE_STIMULATION) {
+            // Process tapping "Enable Stimulation"
             rsmDevice.toggleStimulationEnabled();
             updateDeviceDisplay();
+            return;
         }
+
+        if (atom.settingsType == RSMDevice.SettingsType.JITTER_LEVEL) {
+            // These clicks get handled by onSpinnerSelectionListener
+        }
+
+        // ELSE!
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        // Get the layout inflater
+        final RSMDevice.SettingsType ws = atom.settingsType;
+        LayoutInflater inflater = this.getLayoutInflater();
+
+        // Inflate and set the layout for the dialog
+
+        View v = inflater.inflate(R.layout.settings_dialog, null);
+        final NumberPicker amp = (NumberPicker) v.findViewById(R.id.stimAmplitudeNumberPicker);
+        final NumberPicker freq = (NumberPicker) v.findViewById(R.id.stimCurrentNumberPicker);
+        final NumberPicker pulWid = (NumberPicker) v.findViewById(R.id.pulseWidthNumberPicker);
+        final EditText devId = (EditText) v.findViewById(R.id.deviceIDEditText);
+
+        switch (ws) {
+            case AMPLITUDE:
+                amp.setMaxValue((int) rsmDevice.getMaxAmplitude());
+                amp.setMinValue(0);
+                amp.setValue(Integer.parseInt(rsmDevice.getAmplitudeString()));
+                amp.setVisibility(View.VISIBLE);
+                break;
+            case FREQUENCY:
+                freq.setMaxValue((int) 200);
+                freq.setMinValue((int) rsmDevice.getMinFrequency());
+                freq.setValue(Integer.parseInt(rsmDevice.getStimFrequencyString()));
+                freq.setVisibility(View.VISIBLE);
+                break;
+            case PULSE_WIDTH:
+                pulWid.setMaxValue(100);
+                pulWid.setMinValue(20);
+                pulWid.setValue(rsmDevice.getPulseWidth());
+                pulWid.setVisibility(View.VISIBLE);
+                break;
+            case DEVICE_ID:
+                devId.setVisibility(View.VISIBLE);
+                break;
+            case NA:
+            default:
+                break;
+
+        }
+
+        // Pass null as the parent view because its going in the dialog layout
+        builder.setView(v)
+                // Add action buttons
+                .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int id) {
+
+                        switch (ws) {
+                            case AMPLITUDE:
+                                rsmDevice.setStimCurrent(amp.getValue());
+                                break;
+                            case FREQUENCY:
+                                rsmDevice.setStimPeriod(freq.getValue());
+                                break;
+                            case PULSE_WIDTH:
+                                rsmDevice.setPulseWidth((short) pulWid.getValue());
+                                break;
+                            case DEVICE_ID:
+                                rsmDevice.setDeviceID(devId.getText().toString());
+                                break;
+                            case NA:
+                            default:
+                                break;
+
+                        }
+                        updateDeviceDisplay();
+                    }
+                })
+                .setNegativeButton(R.string.cancel, null);
+        builder.show();
+
     }
 
 

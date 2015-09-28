@@ -41,15 +41,15 @@
  *
  */
 
-#ifndef FIRMWARE_H_
-#define FIRMWARE_H_
+#ifndef RATDBS_FIRMWARE_FIRMWARE_H_
+#define RATDBS_FIRMWARE_FIRMWARE_H_
 
 #include "stdint.h"
 
 /* Program coordination variables */
 extern volatile unsigned char KernelWakeupFlag;                         // status variable
 
-#define PROTOCOL_VERSION 4
+#define PROTOCOL_VERSION 5
 #define DEFAULT_DEVICE_IDSTR "NULL"
 
 /* Device ID variables */
@@ -57,15 +57,6 @@ typedef struct __attribute__((__packed__)) DeviceID_t {
     uint8_t firmwareVersion;
     char idStr[4];
 } DeviceID_t;
-//extern volatile DeviceIDVariables_t DeviceID;
-
-/* Device status variables */
-typedef struct __attribute__((__packed__)) DeviceStatus_t {
-    uint16_t BatteryVoltage;
-    uint32_t Uptime;
-    uint32_t LastUpdate;
-} DeviceStatus_t;
-//extern volatile DeviceStatusVariables_t DeviceStatus;
 
 /* Stimulation parameters *
  *  - These are accessed in the stimulation code, but set in the communcation code
@@ -75,7 +66,16 @@ typedef struct __attribute__((__packed__)) StimParams_t {
     uint16_t Period;
     uint8_t Amplitude;
     uint16_t PulseWidth;
+    uint8_t JitterLevel;
 } StimParams_t;
+
+/* Device status variables */
+typedef struct __attribute__((__packed__)) DeviceStatus_t {
+    uint16_t BatteryVoltage;
+    uint32_t Uptime;
+    uint32_t LastUpdate;
+} DeviceStatus_t;
+
 
 typedef struct __attribute__((__packed__)) DeviceData_t {
     DeviceID_t ID;
@@ -84,7 +84,21 @@ typedef struct __attribute__((__packed__)) DeviceData_t {
 } DeviceData_t;
 
 extern volatile DeviceData_t DeviceData;
-extern volatile DeviceStatus_t DeviceStatus;
 
+/*
+ * Our main loop currently runs three different processes, (1) checking
+ * the battery power level, (2) checking for and responding to parameter
+ * changes via NFC, and (3) writing status information to the NFC chip.
+ * the PERIOD definition determines how regularly these processes take
+ * place (in ms).
+ *
+ */
+#define READ_NFC_DATA_PERIOD 60000 // 60 s (and when triggered by interrupt!)
+#define CHECK_BATTERY_PERIOD 10000 // 10 s
+#define UPDATE_NFC_DATA_PERIOD 1000 // every second
 
-#endif /* FIRMWARE_H_ */
+#ifdef MAKE_BATTERY_LIFE_RECORD
+#define BATTERY_UPDATE_PERIOD 3
+#endif
+
+#endif /* RATDBS_FIRMWARE_FIRMWARE_H_ */

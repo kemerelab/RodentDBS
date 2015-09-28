@@ -39,15 +39,15 @@
  *
  *
 */
-#ifndef NFCINTERFACE_H_
-#define NFCINTERFACE_H_
+#ifndef RATDBS_FIRMWARE_NFCINTERFACE_H_
+#define RATDBS_FIRMWARE_NFCINTERFACE_H_
 
 #include <msp430.h>
+#include "stdint.h"
+#include "stddef.h"
 #include "Firmware.h"
 
 #define RF430_I2C_ADDRESS 0x28
-
-
 
 
 // RF430 register addresses
@@ -100,10 +100,14 @@ typedef struct __attribute__((__packed__)) CapabilityContainer {
 
 typedef struct __attribute__((__packed__)) NDEFExternalRecordHeader_t {
     unsigned char FileID[2];
-    unsigned char NLen[2];
-    unsigned char Flags; // MB=1,ME=1,CF=0,SR=1,IL=0,TNF=0x04 => 0xD4
+    unsigned char NLen[2]; // Payload length, MSB first
+    unsigned char Flags; // MB=1,ME=1,CF=0,SR=0,IL=0,TNF=0x04 => 0xD4
     unsigned char RecordTypeLength; // length of type name
+#ifdef MAKE_BATTERY_RECORD
+    unsigned char PayloadLength[4]; // should just be PayloadLength, if SR=1
+#else
     unsigned char PayloadLength;
+#endif
     unsigned char TypeName[sizeof(EXTERNAL_RECORD_TYPE_NAME)-1]; // rnel.rice.edu:rsm
 } ExternalRecordHeader;
 
@@ -111,26 +115,59 @@ typedef struct __attribute__((__packed__)) NDEF_ExternalRecord_t {
     unsigned char TagApplicationName[7];
     CapabilityContainer CapContainer; // 17 bytes
     ExternalRecordHeader RecordHeader; // header depends on string sizes bytes
-    unsigned char BinaryMessage[sizeof(DeviceData_t)];
+    DeviceData_t DeviceData;
 } NDEF_ExternalRecord_t;
 
-struct __attribute__((__packed__)) I2C_NDEF_FullRecord {
+typedef struct __attribute__((__packed__)) I2C_NDEF_FullRecord_t {
     unsigned char MemoryAddress[2];
     NDEF_ExternalRecord_t ND;
-};
+} I2C_NDEF_FullRecord;
 
-#define EXTERNAL_RECORD_DATA_START  7 + sizeof(CapabilityContainer)  + \
-    sizeof(ExternalRecordHeader) // - for UnknownRecord
+typedef struct __attribute__((__packed__)) I2C_DataRecord_t {
+    unsigned char MemoryAddress[2];
+    ExternalRecordHeader RecordHeader;
+    DeviceData_t DevData;
+} I2C_DataRecord;
 
-#define STIMPARAMS_ADDR EXTERNAL_RECORD_DATA_START + sizeof(DeviceID_t)
-#define STATUS_ADDR STIMPARAMS_ADDR + sizeof(StimParams_t)
+typedef struct __attribute__((__packed__)) I2C_StatusRecord_t {
+    unsigned char MemoryAddress[2];
+    DeviceStatus_t Status;
+} I2C_StatusRecord;
+
+#define EXTERNAL_RECORD_HEADER_ADDR  offsetof(NDEF_ExternalRecord_t, RecordHeader)
+#define EXTERNAL_RECORD_DATA_START  offsetof(NDEF_ExternalRecord_t, DeviceData)
+
+#define STIMPARAMS_ADDR offsetof(NDEF_ExternalRecord_t, DeviceData) + offsetof(DeviceData_t, StimParams)
+#define STATUS_ADDR offsetof(NDEF_ExternalRecord_t, DeviceData) + offsetof(DeviceData_t, Status)
+
+#define RECORD_LEN_ADDR offsetof(NDEF_ExternalRecord_t, RecordHeader) + offsetof(ExternalRecordHeader, NLen)
+#define RECORD_SIZE_WITHOUT_EXTRA (sizeof(ExternalRecordHeader) - offsetof(ExternalRecordHeader,Flags)) + sizeof(DeviceData_t)
+#define PAYLOAD_LEN_ADDR offsetof(NDEF_ExternalRecord_t, RecordHeader) + offsetof(ExternalRecordHeader, PayloadLength)
+#define PAYLOAD_SIZE_WITHOUT_EXTRA sizeof(DeviceData_t)
+
+#ifdef MAKE_BATTERY_RECORD
+#define BATTERY_RECORDS 200
+#define BATTERY_RECORD_SIZE (sizeof(DeviceData.Status.Uptime) + sizeof(DeviceData.Status.BatteryVoltage))
+#define BATTERY_RECORDS_ADDR EXTERNAL_RECORD_HEADER_ADDR + sizeof(ExternalRecordHeader) + sizeof(DeviceData_t)
+#define BATTERY_RECORD_ARRAY_SIZE BATTERY_RECORDS * BATTERY_RECORD_SIZE
+#define RECORD_SIZE RECORD_SIZE_WITHOUT_EXTRA + BATTERY_RECORD_ARRAY_SIZE
+#define PAYLOAD_SIZE PAYLOAD_SIZE_WITHOUT_EXTRA + BATTERY_RECORD_ARRAY_SIZE
+#else
+#define RECORD_SIZE RECORD_SIZE_WITHOUT_EXTRA
+#define PAYLOAD_SIZE PAYLOAD_SIZE_WITHOUT_EXTRA
+
+#endif
+
+
 
 extern volatile int RF430InterruptTriggered;
 
+extern const NDEF_ExternalRecord_t* HWRecordPointer;
 
 void NFCInterfaceSetup(void);
 void UpdateDeviceStatus(void);
 int ReadDeviceParams(StimParams_t *NewStimParams);
+void WriteBatteryRecord();
 void ClearNFCInterrupts(void);
 
 #endif

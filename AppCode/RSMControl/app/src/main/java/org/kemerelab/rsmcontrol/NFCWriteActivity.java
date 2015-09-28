@@ -2,8 +2,9 @@ package org.kemerelab.rsmcontrol;
 
 import android.content.Intent;
 import android.nfc.NdefMessage;
-import android.nfc.NdefRecord;
 import android.os.Bundle;
+import android.os.Parcel;
+import android.os.Parcelable;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -18,8 +19,6 @@ import org.ndeftools.util.activity.NfcTagWriterActivity;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.ListIterator;
-
-import android.util.Log;
 
 
 public class NFCWriteActivity extends NfcTagWriterActivity {
@@ -40,20 +39,27 @@ public class NFCWriteActivity extends NfcTagWriterActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_nfcwrite);
 
-        Intent intent = getIntent();
-        NDEFData = intent.getByteArrayExtra(MainActivity.NDEF_DATA_TO_BE_WRITTEN);
-        rsmDevice = intent.getExtras().getParcelable(MainActivity.RSM_DEVICE_STRUCTURE);
+        if (savedInstanceState == null) {
+            Intent intent = getIntent();
+            NDEFData = intent.getByteArrayExtra(MainActivity.NDEF_DATA_TO_BE_WRITTEN);
+            rsmDevice = intent.getExtras().getParcelable(MainActivity.RSM_DEVICE_STRUCTURE);
+        }
+        else {
+            super.onRestoreInstanceState(savedInstanceState);
+            NDEFData = savedInstanceState.getByteArray(MainActivity.NDEF_DATA_TO_BE_WRITTEN);
+            rsmDevice = savedInstanceState.getParcelable(MainActivity.RSM_DEVICE_STRUCTURE);
+        }
 
         ListView lv = (ListView) findViewById(R.id.deviceInfoToBeWritten);
 
         List<RSMDeviceInfoAtom> deviceInfoList = rsmDevice.getDeviceInfoList(this);
         ListIterator<RSMDeviceInfoAtom> iter = deviceInfoList.listIterator();
         while (iter.hasNext()) {
-            if(iter.next().settingsType == RSMDevice.UserSettings.STATUS_ATOM) {
+            if(iter.next().settingsType == RSMDevice.SettingsType.STATUS_ATOM) {
                 iter.remove();
             }
         }
-        RSMDeviceInfoListAdapter devAdapter = new RSMDeviceInfoListAdapter(this, deviceInfoList);
+        RSMDeviceInfoListAdapter devAdapter = new RSMDeviceInfoListAdapter(this, deviceInfoList, true, false);
         lv.setAdapter(devAdapter);
 
         // lets start detecting NDEF message using foreground mode
@@ -82,99 +88,10 @@ public class NFCWriteActivity extends NfcTagWriterActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    public void updateStatus(NFCAvalability nfcAvalability) {
-        TextView t = (TextView) findViewById(R.id.writerStatusText);
-        if ( t!= null) {
-            switch (nfcAvalability) {
-                case NOT_AVAIALBLE:
-                    t.setText(getString(R.string.noNfcMessage));
-                    t.setTextColor(getResources().getColor(R.color.LightRed));
-                    break;
-                case AVAILABLE_NOT_ENABLED:
-                    t.setText(getString(R.string.nfcAvailableDisabled));
-                    t.setTextColor(R.color.LightRed);
-                    break;
-                case AVAILABLE_ENABLED:
-                    t.setText(getString(R.string.nfcAvailableEnabled));
-                    t.setTextColor(R.color.LightGreen);
-                    break;
-                default:
-                    t.setText("Unknown state");
-            }
-        }
-    }
-
-    public void updateStatus(String message) {
-        TextView t = (TextView) findViewById(R.id.statusTextView);
-        if ( t!= null) {
-            t.setText(getString(R.string.nfcAvailableEnabled));
-            t.setTextColor(R.color.LightBlue);
-        }
-    }
-
-    /**
-     *
-     * This device does not have NFC hardware - Called in onCreate of NfcReaderActivity
-     *
-     */
-
-    @Override
-    protected void onNfcFeatureNotFound() {
-        toast(getString(R.string.noNfcMessage));
-    }
-
-    /**
-     * NFC feature was found and is currently enabled  - Called in onCreate of NfcReaderActivity
-     */
-
-    @Override
-    protected void onNfcStateEnabled() {
-        nfcAvalability = NFCAvalability.AVAILABLE_ENABLED;
-    }
-
-    /**
-     * NFC feature was found but is currently disabled - Called in onCreate of NfcReaderActivity
-     */
-
-    @Override
-    protected void onNfcStateDisabled() {
-        toast(getString(R.string.nfcAvailableDisabled));
-        nfcAvalability = NFCAvalability.AVAILABLE_NOT_ENABLED;
-    }
-
-    /**
-     * NFC setting changed since last check. For example, the user enabled NFC in the wireless settings.
-     */
-
-    @Override
-    protected void onNfcStateChange(boolean enabled) {
-        if (enabled) {
-            //toast(getString(R.string.nfcAvailableEnabled));
-            nfcAvalability = NFCAvalability.AVAILABLE_ENABLED;
-            updateStatus(nfcAvalability);
-        } else {
-            toast(getString(R.string.nfcAvailableDisabled));
-            nfcAvalability = NFCAvalability.AVAILABLE_NOT_ENABLED;
-            updateStatus(nfcAvalability);
-        }
-    }
-
-    @Override
-    protected void onTagLost() {
-        toast(getString(R.string.tagLost));
-    }
-
-    /**
-     *
-     * Create an NDEF message to be written when a tag is within range.
-     *
-     * @return the message to be written
-     */
 
     @Override
     protected NdefMessage createNdefMessage() {
-
-        // compose our own message
+        // Create the NDEF message to be written when a tag is within range.
         Message message = new Message();
 
         // add an External type Record with the proper message
@@ -198,66 +115,86 @@ public class NFCWriteActivity extends NfcTagWriterActivity {
         return message.getNdefMessage();
     }
 
-
-    /**
-     *
-     * Writing NDEF message to tag failed.
-     *
-     * @param e exception
-     */
-
     @Override
-    protected void writeNdefFailed(Exception e) {
-        toast(getString(R.string.ndefWriteFailed, e.toString()));
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putByteArray(MainActivity.NDEF_DATA_TO_BE_WRITTEN, NDEFData);
+        outState.putParcelable(MainActivity.RSM_DEVICE_STRUCTURE, rsmDevice);
     }
 
-    /**
-     *
-     * Tag is not writable or write-protected.
-     *
-     * @param e exception
-     */
-
     @Override
-    public void writeNdefNotWritable() {
-        toast(getString(R.string.tagNotWritable));
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        NDEFData = savedInstanceState.getByteArray(MainActivity.NDEF_DATA_TO_BE_WRITTEN);
+        rsmDevice = savedInstanceState.getParcelable(MainActivity.RSM_DEVICE_STRUCTURE);
+        super.onRestoreInstanceState(savedInstanceState);
     }
-
-    /**
-     *
-     * Tag capacity is lower than NDEF message size.
-     *
-     * @param e exception
-     */
-
-    @Override
-    public void writeNdefTooSmall(int required, int capacity) {
-        toast(getString(R.string.tagTooSmallMessage,  required, capacity));
-    }
-
-
-    /**
-     *
-     * Unable to write this type of tag.
-     *
-     */
-
-    @Override
-    public void writeNdefCannotWriteTech() {
-        toast(getString(R.string.cannotWriteTechMessage));
-    }
-
-    /**
-     *
-     * Successfully wrote NDEF message to tag.
-     *
-     */
 
     @Override
     protected void writeNdefSuccess() {
+        // Successfully wrote NDEF message to tag.
         toast(getString(R.string.ndefWriteSuccess));
     }
 
+    @Override
+    protected void onTagLost() {
+        toast(getString(R.string.tagLost));
+    }
+
+    @Override
+    protected void writeNdefFailed(Exception e) {
+        // Writing NDEF message to tag failed.
+        toast(getString(R.string.ndefWriteFailed, e.toString()));
+    }
+
+        @Override
+    public void writeNdefNotWritable() {
+        // Tag is not writable or write-protected.
+        toast(getString(R.string.tagNotWritable));
+    }
+
+    @Override
+    public void writeNdefTooSmall(int required, int capacity) {
+        // Tag capacity is lower than NDEF message size.
+        toast(getString(R.string.tagTooSmallMessage, required, capacity));
+    }
+
+
+    @Override
+    public void writeNdefCannotWriteTech() {
+        // Unable to write this type of tag.
+        toast(getString(R.string.cannotWriteTechMessage));
+    }
+
+    @Override
+    protected void onNfcFeatureNotFound() {
+        // This device does not have NFC hardware - Called in onCreate of NfcReaderActivity
+        toast(getString(R.string.noNfcMessage));
+        finish();
+    }
+
+    @Override
+    protected void onNfcStateEnabled() {
+        // NFC feature was found and is currently enabled  - Called in onCreate of NfcReaderActivity
+        // we better be in this state!
+    }
+
+    @Override
+    protected void onNfcStateDisabled() {
+        // NFC feature was found but is currently disabled - Called in onCreate of NfcReaderActivity
+        toast(getString(R.string.nfcAvailableDisabled));
+        finish();
+    }
+
+    @Override
+    protected void onNfcStateChange(boolean enabled) {
+        // NFC setting changed since last check. For example, the user enabled NFC in the wireless settings.
+        if (enabled) {
+            //toast(getString(R.string.nfcAvailableEnabled));
+        } else {
+            toast(getString(R.string.nfcAvailableDisabled));
+            finish();
+        }
+    }
 
     public void toast(String message) {
         Toast toast = Toast.makeText(this, message, Toast.LENGTH_LONG);

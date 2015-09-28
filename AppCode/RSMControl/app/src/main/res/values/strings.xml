@@ -11,6 +11,14 @@
     <string name="stimFrequencyLabel">Stimulation Frequency</string>
     <string name="stimAmplitudeLabel">Stimulaton Amplitude</string>
     <string name="pulseWidthLabel">Pulse width</string>
+    <string name="jitterLabel">Jitter level</string>
+    <string-array name="jitter_levels">
+        <item>no jitter</item>
+        <item>0-1 µs</item>
+        <item>0-2 µs</item>
+        <item>0-4 µs</item>
+    </string-array>
+
     <string name="lastUpdateLabel">Last update</string>
     <string name="uptimeLabel">Device Up-time</string>
     <string name="batteryVoltageLabel">Battery Voltage</string>

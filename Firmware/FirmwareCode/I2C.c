@@ -64,7 +64,8 @@ inline void I2CSetup (void)
 }
 
 inline void InitializeI2CSlave(unsigned char slave_addr) {
-	char temp;
+    unsigned char temp;
+
 	while (UCB0CTL1 & UCTXSTP) {
 		temp = UCB0RXBUF;
 	}

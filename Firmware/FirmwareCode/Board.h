@@ -40,8 +40,8 @@
  *  Defines which map actual hardware pins to functionality
  *
  */
-#ifndef BOARD_H_
-#define BOARD_H_
+#ifndef RATDBS_FIRMWARE_BOARD_H_
+#define RATDBS_FIRMWARE_BOARD_H_
 
 // Status LED
 #define STATUS_LED_PDIR P2DIR
@@ -81,4 +81,4 @@
 
 
 
-#endif /* BOARD_H_ */
+#endif /* RATDBS_FIRMWARE_BOARD_H_ */

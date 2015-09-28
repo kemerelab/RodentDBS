@@ -115,9 +115,15 @@ __interrupt void Timer_A0_ISR(void)
             NextStimulationState = OFF;
             TA0CCTL0 = ~CCIE;
         }
-        else
+        else {
             CCR0 += DeviceData.StimParams.Period - \
                (DeviceData.StimParams.PulseWidth + DeviceData.StimParams.PulseWidth); //increment CCR0
+            if (DeviceData.StimParams.JitterLevel > 0) {
+                CCR0 += (jitterValueTable[jitterTableCounter++] >> ( 3 - DeviceData.StimParams.JitterLevel));
+                if (jitterTableCounter >= jitterTableLength)
+                    jitterTableCounter = 0;
+            }
+        }
         break;
     case OFF:
     default: // should never reach here
