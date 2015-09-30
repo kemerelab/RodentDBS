@@ -1,5 +1,7 @@
-RodentDBS
+Rodent Stimulation Module Project
 =========
+
+<img src="AppCode/Graphics/Feature.png">
 
 Rodent-scale open source programmable constant current deep brain stimulation system. Runs on a
 low power MSP430 microcontroller from Texas Instrumnents. Interfaces with an Android app using
