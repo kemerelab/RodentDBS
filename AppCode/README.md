@@ -2,8 +2,8 @@
 
 ### Screenshots
 
-![Main Interface](Graphics/AndroidAppScreenshot.png)
+<img src="Graphics/AndroidAppScreenshot.png" width="100">
 
+<img src="Graphics/AndroidAppScreenshot2.png" width="100">
 
-![Programming Interface](Graphics/AndroidAppScreenshot2.png)
 
