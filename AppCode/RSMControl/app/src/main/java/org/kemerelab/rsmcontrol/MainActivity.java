@@ -22,6 +22,7 @@ import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.NumberPicker;
+import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
@@ -59,9 +60,9 @@ public class MainActivity extends NfcReaderActivity implements AdapterView.OnIte
         }
 
         setContentView(R.layout.activity_main);
-        updateStatus(nfcAvalability);
-        updateDeviceDisplay();
-        updateDeviceInfoEditState();
+        Switch s = (Switch) findViewById(R.id.editToggleSwitch);
+        s.setChecked(editingDeviceInfo);
+        updateStatus(nfcAvalability); // Calls updateDeviceInfoEditState(), which calls updateDeviceInfo()
 
         // lets start detecting NDEF message using foreground mode
         setDetecting(true);
@@ -104,27 +105,15 @@ public class MainActivity extends NfcReaderActivity implements AdapterView.OnIte
         return super.onOptionsItemSelected(item);
     }
 
-
     public void toast(String message) {
         Toast toast = Toast.makeText(this, message, Toast.LENGTH_LONG);
         toast.setGravity(Gravity.CENTER_HORIZONTAL | Gravity.CENTER_VERTICAL, 0, 0);
         toast.show();
     }
 
-    public void onEditSwitchToggled (View view) {
-        if (((Switch) view).isChecked()) {
-            editingDeviceInfo = true;
-        }
-        else {
-            updateRSMDeviceValues();
-            editingDeviceInfo = false;
-        }
-
-        InputMethodManager mgr = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-        mgr.hideSoftInputFromWindow(view.getWindowToken(), 0);
-
-        updateDeviceInfoEditState();
+    public void updateRSMDeviceValues() {
     }
+
 
     public void onProgramButtonClicked (View view) {
         updateRSMDeviceValues();
@@ -133,31 +122,6 @@ public class MainActivity extends NfcReaderActivity implements AdapterView.OnIte
         intent.putExtra(RSM_DEVICE_STRUCTURE, rsmDevice);
         startActivity(intent);
     }
-
-    public void updateDeviceInfoEditState() {
-        ListView s = (ListView) findViewById(R.id.deviceInfoListView);
-        if (!editingDeviceInfo) {
-            switch (nfcAvalability) {
-                case AVAILABLE_ENABLED:
-                    s.setBackgroundColor(getResources().getColor(R.color.BackgroundLightGray));
-                    break;
-                case NOT_AVAIALBLE:
-                case AVAILABLE_NOT_ENABLED:
-                default:
-                    s.setBackgroundColor(getResources().getColor(R.color.BackgroundLightRed));
-
-                    break;
-            }
-       }
-        else {
-            s.setBackgroundColor(Color.WHITE);
-        }
-        updateDeviceDisplay();
-    }
-
-    public void updateRSMDeviceValues() {
-    }
-
 
     public void updateStatus(NFCAvalability nfcAvalability) {
         TextView t = (TextView) findViewById(R.id.statusTextView);
@@ -182,6 +146,19 @@ public class MainActivity extends NfcReaderActivity implements AdapterView.OnIte
         updateDeviceInfoEditState();
     }
 
+    public void updateDeviceInfoEditState() {
+        ListView s = (ListView) findViewById(R.id.deviceInfoListView);
+        if (editingDeviceInfo)
+            s.setBackgroundColor(Color.WHITE);
+        else {
+            if (nfcAvalability == NFCAvalability.AVAILABLE_ENABLED)
+                s.setBackgroundColor(getResources().getColor(R.color.BackgroundLightGray));
+            else
+                s.setBackgroundColor(getResources().getColor(R.color.BackgroundLightRed));
+        }
+        updateDeviceDisplay();
+    }
+
     public void updateDeviceDisplay() {
         ListView lv = (ListView) findViewById(R.id.deviceInfoListView);
         lv.setEnabled(editingDeviceInfo);
@@ -192,6 +169,21 @@ public class MainActivity extends NfcReaderActivity implements AdapterView.OnIte
         devAdapter.setSpinnerListener(this);
     }
 
+
+    public void onEditSwitchToggled (View view) {
+        if (((Switch) view).isChecked())
+            editingDeviceInfo = true;
+        else {
+            updateRSMDeviceValues();
+            editingDeviceInfo = false;
+        }
+
+        InputMethodManager mgr = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        mgr.hideSoftInputFromWindow(view.getWindowToken(), 0);
+
+        updateDeviceInfoEditState();
+    }
+
     public void onSpinnerSelectionListener(RSMDevice.SettingsType settingsType, int spinnerPosition) {
         if (settingsType == RSMDevice.SettingsType.JITTER_LEVEL) {
             rsmDevice.setJitterLevel(spinnerPosition);
@@ -199,12 +191,12 @@ public class MainActivity extends NfcReaderActivity implements AdapterView.OnIte
     }
 
     @Override
-    public void onItemClick(AdapterView<?> adapter, View view, int position,
-                            long id) {
-
+    public void onItemClick(AdapterView<?> adapter, View view, int position, long id) {
 
         RSMDeviceInfoAtom atom = (RSMDeviceInfoAtom) adapter.getItemAtPosition(position);
-        if ((!editingDeviceInfo) | (atom.settingsType == RSMDevice.SettingsType.NA)) {
+        if ((!editingDeviceInfo) | (atom.settingsType == RSMDevice.SettingsType.NA) |
+                (atom.settingsType == RSMDevice.SettingsType.JITTER_LEVEL) ) {
+                // Clicks on the jitter menu get handled by onSpinnerSelectionListener
             return;
         }
 
@@ -215,25 +207,18 @@ public class MainActivity extends NfcReaderActivity implements AdapterView.OnIte
             return;
         }
 
-        if (atom.settingsType == RSMDevice.SettingsType.JITTER_LEVEL) {
-            // These clicks get handled by onSpinnerSelectionListener
-        }
-
         // ELSE!
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        // Get the layout inflater
-        final RSMDevice.SettingsType ws = atom.settingsType;
+        final RSMDevice.SettingsType whichSettingType = atom.settingsType;
         LayoutInflater inflater = this.getLayoutInflater();
-
         // Inflate and set the layout for the dialog
-
-        View v = inflater.inflate(R.layout.settings_dialog, null);
+        final View v = inflater.inflate(R.layout.settings_dialog, null);
+        // Get the layout inflater
         final NumberPicker amp = (NumberPicker) v.findViewById(R.id.stimAmplitudeNumberPicker);
         final NumberPicker freq = (NumberPicker) v.findViewById(R.id.stimCurrentNumberPicker);
         final NumberPicker pulWid = (NumberPicker) v.findViewById(R.id.pulseWidthNumberPicker);
         final EditText devId = (EditText) v.findViewById(R.id.deviceIDEditText);
 
-        switch (ws) {
+        switch (whichSettingType) {
             case AMPLITUDE:
                 amp.setMaxValue((int) rsmDevice.getMaxAmplitude());
                 amp.setMinValue(0);
@@ -260,37 +245,37 @@ public class MainActivity extends NfcReaderActivity implements AdapterView.OnIte
                 break;
 
         }
-
-        // Pass null as the parent view because its going in the dialog layout
-        builder.setView(v)
+        final AlertDialog d = new AlertDialog.Builder(this)
+            .setView(v)
                 // Add action buttons
-                .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int id) {
+            .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int id) {
 
-                        switch (ws) {
-                            case AMPLITUDE:
+                    switch (whichSettingType) {
+                        case AMPLITUDE:
                                 rsmDevice.setStimCurrent(amp.getValue());
-                                break;
-                            case FREQUENCY:
+                            break;
+                        case FREQUENCY:
                                 rsmDevice.setStimPeriod(freq.getValue());
-                                break;
-                            case PULSE_WIDTH:
+                            break;
+                        case PULSE_WIDTH:
                                 rsmDevice.setPulseWidth((short) pulWid.getValue());
-                                break;
-                            case DEVICE_ID:
+                            break;
+                        case DEVICE_ID:
                                 rsmDevice.setDeviceID(devId.getText().toString());
-                                break;
-                            case NA:
-                            default:
-                                break;
+                            break;
+                        case NA:
+                        default:
+                            break;
 
-                        }
-                        updateDeviceDisplay();
                     }
-                })
-                .setNegativeButton(R.string.cancel, null);
-        builder.show();
+                    updateDeviceDisplay();
+                }
+            })
+        .setNegativeButton(R.string.cancel, null)
+        .create();
+        d.show();
 
     }
 
