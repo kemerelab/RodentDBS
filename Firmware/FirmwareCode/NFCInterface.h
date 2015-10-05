@@ -101,9 +101,9 @@ typedef struct __attribute__((__packed__)) CapabilityContainer {
 typedef struct __attribute__((__packed__)) NDEFExternalRecordHeader_t {
     unsigned char FileID[2];
     unsigned char NLen[2]; // Payload length, MSB first
-    unsigned char Flags; // MB=1,ME=1,CF=0,SR=0,IL=0,TNF=0x04 => 0xD4
+    unsigned char Flags; // MB=1,ME=1,CF=0,SR=1,IL=0,TNF=0x04 => 0xD4
     unsigned char RecordTypeLength; // length of type name
-#ifdef MAKE_BATTERY_RECORD
+#ifdef LONG_RECORD
     unsigned char PayloadLength[4]; // should just be PayloadLength, if SR=1
 #else
     unsigned char PayloadLength;
@@ -141,23 +141,9 @@ typedef struct __attribute__((__packed__)) I2C_StatusRecord_t {
 #define STATUS_ADDR offsetof(NDEF_ExternalRecord_t, DeviceData) + offsetof(DeviceData_t, Status)
 
 #define RECORD_LEN_ADDR offsetof(NDEF_ExternalRecord_t, RecordHeader) + offsetof(ExternalRecordHeader, NLen)
-#define RECORD_SIZE_WITHOUT_EXTRA (sizeof(ExternalRecordHeader) - offsetof(ExternalRecordHeader,Flags)) + sizeof(DeviceData_t)
+#define RECORD_SIZE (sizeof(ExternalRecordHeader) - offsetof(ExternalRecordHeader,Flags)) + sizeof(DeviceData_t)
 #define PAYLOAD_LEN_ADDR offsetof(NDEF_ExternalRecord_t, RecordHeader) + offsetof(ExternalRecordHeader, PayloadLength)
-#define PAYLOAD_SIZE_WITHOUT_EXTRA sizeof(DeviceData_t)
-
-#ifdef MAKE_BATTERY_RECORD
-#define BATTERY_RECORDS 200
-#define BATTERY_RECORD_SIZE (sizeof(DeviceData.Status.Uptime) + sizeof(DeviceData.Status.BatteryVoltage))
-#define BATTERY_RECORDS_ADDR EXTERNAL_RECORD_HEADER_ADDR + sizeof(ExternalRecordHeader) + sizeof(DeviceData_t)
-#define BATTERY_RECORD_ARRAY_SIZE BATTERY_RECORDS * BATTERY_RECORD_SIZE
-#define RECORD_SIZE RECORD_SIZE_WITHOUT_EXTRA + BATTERY_RECORD_ARRAY_SIZE
-#define PAYLOAD_SIZE PAYLOAD_SIZE_WITHOUT_EXTRA + BATTERY_RECORD_ARRAY_SIZE
-#else
-#define RECORD_SIZE RECORD_SIZE_WITHOUT_EXTRA
-#define PAYLOAD_SIZE PAYLOAD_SIZE_WITHOUT_EXTRA
-
-#endif
-
+#define PAYLOAD_SIZE sizeof(DeviceData_t)
 
 
 extern volatile int RF430InterruptTriggered;

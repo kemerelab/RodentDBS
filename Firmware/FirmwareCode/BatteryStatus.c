@@ -66,12 +66,6 @@ void CheckBattery(void) {
                                 // and will result in the ISR when data ready
     __bis_SR_register(CPUOFF + GIE); // Enter LPM0 w/ interrupts (will stall here
                                             // until ADC finishes).
-#ifdef MAKE_BATTERY_LIFE_RECORD
-    if (BatteryUpdateCounter++ == 0)
-        WriteBatteryRecord();
-    else if (BatteryUpdateCounter >= BATTERY_UPDATE_PERIOD)
-        BatteryUpdateCounter = 0;
-#endif
 }
 
 #pragma vector=ADC10_VECTOR

@@ -71,17 +71,18 @@ volatile DeviceData_t DeviceData = {\
         .ID.idStr = DEFAULT_DEVICE_IDSTR, .ID.firmwareVersion = PROTOCOL_VERSION, \
         .Status.BatteryVoltage = 0, .Status.Uptime = 0, .Status.LastUpdate = 0,\
         .StimParams.Enabled = 0, .StimParams.Period = 7500, \
-        .StimParams.Amplitude = 100, .StimParams.PulseWidth = 60, \
+        .StimParams.Amplitude = 100, .StimParams.PulseWidth = 60,
+        .StimParams.JitterLevel = 0, \
         .Status.BatteryVoltage = 0, .Status.Uptime = 0, .Status.LastUpdate = 0};
-//volatile DeviceStatus_t DeviceStatus = {.BatteryVoltage = 0, .Uptime = 0, .LastUpdate = 0};
+
 volatile int StimParamsChanged = 0;
 
 /*
  * State variables for main loop control.
  */
-volatile unsigned int CheckBatteryCounter = 50;
+volatile unsigned int CheckBatteryCounter = 50; // start this small so we get an immediate reading
 volatile unsigned int ReadNFCDataCounter = READ_NFC_DATA_PERIOD-1;
-volatile unsigned int UpdateNFCDataCounter = UPDATE_NFC_DATA_PERIOD-1;
+volatile unsigned int UpdateNFCDataCounter = 200; // start this small so we get an immediate reading
 
 
 /*

@@ -119,6 +119,7 @@ __interrupt void Timer_A0_ISR(void)
             CCR0 += DeviceData.StimParams.Period - \
                (DeviceData.StimParams.PulseWidth + DeviceData.StimParams.PulseWidth); //increment CCR0
             if (DeviceData.StimParams.JitterLevel > 0) {
+                CCR0 -= (1999 >> ( 3 - DeviceData.StimParams.JitterLevel)); // subtract off half of jitter level!
                 CCR0 += (jitterValueTable[jitterTableCounter++] >> ( 3 - DeviceData.StimParams.JitterLevel));
                 if (jitterTableCounter >= jitterTableLength)
                     jitterTableCounter = 0;
