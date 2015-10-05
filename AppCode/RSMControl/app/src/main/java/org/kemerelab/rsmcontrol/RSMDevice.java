@@ -164,14 +164,14 @@ public class RSMDevice implements Parcelable {
         ByteBuffer buf;
         switch (firmwareVersion) {
             case 3:
-                buf = ByteBuffer.allocate(21); // hard coded for current data string!
+                buf = ByteBuffer.allocate(22); // hard coded for current data string!
                 break;
             case 4:
-                buf = ByteBuffer.allocate(22); // hard coded for current data string!
+                buf = ByteBuffer.allocate(21); // hard coded for current data string!
                 break;
             case 5:
             default:
-                buf = ByteBuffer.allocate(23); // hard coded for current data string!
+                buf = ByteBuffer.allocate(22); // hard coded for current data string!
                 break;
         }
 
@@ -185,12 +185,16 @@ public class RSMDevice implements Parcelable {
                 buf.putShort((short) stimulationCurrentSetting);
                 break;
             case 4:
+            case 5:
             default:
                 buf.put((byte) stimulationCurrentSetting);
                 break;
         }
         buf.putShort((short) stimulationWidth);
-        buf.put(jitterLevel);
+
+        if (firmwareVersion > 4)
+            buf.put((byte) jitterLevel);
+
         buf.putShort((short) 0); // battery voltage will get reset by device
         buf.putInt(0); // uptime will get reset by device
         buf.putInt(0); // lastUpdate will get reset by device
