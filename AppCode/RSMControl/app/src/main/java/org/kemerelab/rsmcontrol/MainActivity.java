@@ -163,7 +163,7 @@ public class MainActivity extends NfcReaderActivity implements AdapterView.OnIte
         ListView lv = (ListView) findViewById(R.id.deviceInfoListView);
         lv.setEnabled(editingDeviceInfo);
         RSMDeviceInfoListAdapter devAdapter = new RSMDeviceInfoListAdapter(this,
-                rsmDevice.getDeviceInfoList(this), false, editingDeviceInfo);
+                rsmDevice.getDeviceInfoList(this, true), false, editingDeviceInfo);
         lv.setAdapter(devAdapter);
         lv.setOnItemClickListener(this);
         devAdapter.setSpinnerListener(this);
@@ -184,23 +184,37 @@ public class MainActivity extends NfcReaderActivity implements AdapterView.OnIte
         updateDeviceInfoEditState();
     }
 
-    public void onSpinnerSelectionListener(RSMDevice.SettingsType settingsType, int spinnerPosition) {
-        if (settingsType == RSMDevice.SettingsType.JITTER_LEVEL) {
-            rsmDevice.setJitterLevel(spinnerPosition);
+    public void onSpinnerSelectionListener(RSMDeviceInfoAtom.SettingsType settingsType, int spinnerPosition) {
+        switch (settingsType) {
+            case JITTER_LEVEL:
+                rsmDevice.setJitterLevel(spinnerPosition);
+                break;
+            case AMPLITUDE:
+                rsmDevice.setStimAmplitudeFromList(spinnerPosition);
+                break;
+            case FREQUENCY:
+                rsmDevice.setStimFrequencyFromList(spinnerPosition);
+                break;
+            case PULSE_WIDTH:
+                rsmDevice.setPulseWidthFromList(spinnerPosition);
+                break;
         }
     }
 
     @Override
     public void onItemClick(AdapterView<?> adapter, View view, int position, long id) {
 
+        if (!editingDeviceInfo)
+            return;
+
         RSMDeviceInfoAtom atom = (RSMDeviceInfoAtom) adapter.getItemAtPosition(position);
-        if ((!editingDeviceInfo) | (atom.settingsType == RSMDevice.SettingsType.NA) |
-                (atom.settingsType == RSMDevice.SettingsType.JITTER_LEVEL) ) {
-                // Clicks on the jitter menu get handled by onSpinnerSelectionListener
+        if ((atom.atomAction == RSMDeviceInfoAtom.AtomAction.NONE) ||
+                (atom.atomAction == RSMDeviceInfoAtom.AtomAction.SPINNER)) {
+                // Clicks on the spinner menus get handled by onSpinnerSelectionListener
             return;
         }
 
-        if (atom.settingsType == RSMDevice.SettingsType.ENABLE_STIMULATION) {
+        if (atom.settingsType == RSMDeviceInfoAtom.SettingsType.ENABLE_STIMULATION) {
             // Process tapping "Enable Stimulation"
             rsmDevice.toggleStimulationEnabled();
             updateDeviceDisplay();
@@ -208,7 +222,7 @@ public class MainActivity extends NfcReaderActivity implements AdapterView.OnIte
         }
 
         // ELSE!
-        final RSMDevice.SettingsType whichSettingType = atom.settingsType;
+        final RSMDeviceInfoAtom.SettingsType whichSettingType = atom.settingsType;
         LayoutInflater inflater = this.getLayoutInflater();
         // Inflate and set the layout for the dialog
         final View v = inflater.inflate(R.layout.settings_dialog, null);

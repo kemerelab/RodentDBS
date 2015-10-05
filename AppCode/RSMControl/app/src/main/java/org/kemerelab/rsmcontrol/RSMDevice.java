@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.util.Log;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -17,26 +18,62 @@ import java.util.List;
  */
 
 class RSMDeviceInfoAtom {
+    public enum AtomFormatting {DATA, HEADER, STATUS_DATA, STATUS_HEADER};
+
+    public enum AtomAction {NONE, TOGGLE_BUTTON, SPINNER, DIALOG};
+
+    public enum SettingsType {NA,
+        DEVICE_ID, ENABLE_STIMULATION, AMPLITUDE, FREQUENCY, PULSE_WIDTH, JITTER_LEVEL
+    };
+
+
     public String caption;
-    public String datum;
-    public RSMDevice.SettingsType settingsType;
-    public int datumValue;
-    public boolean isHeader;
+    public String stringDatum;
+    public int currentPosition;
+    public SettingsType settingsType;
+    public AtomAction atomAction;
+    public AtomFormatting atomFormatting;
+    public List<String> stringValues;
 
-    public RSMDeviceInfoAtom(String _caption, String _datum, RSMDevice.SettingsType _settingsType) {
-        caption = _caption; datum = _datum; settingsType = _settingsType;
-        isHeader = false; datumValue = -1;
+    public RSMDeviceInfoAtom(String _caption, SettingsType _type, AtomFormatting _formatting,
+                             AtomAction _action, String _stringDatum) {
+        caption = _caption;
+        stringDatum = _stringDatum;
+        currentPosition = -1;
+        settingsType = _type;
+        atomAction = _action;
+        atomFormatting = _formatting;
     }
 
-    public RSMDeviceInfoAtom(String _caption, int _datumValue, RSMDevice.SettingsType _settingsType) {
-        caption = _caption; settingsType = _settingsType; datumValue = _datumValue;
-        isHeader = false; datum = "";
+    public RSMDeviceInfoAtom(String _caption, SettingsType _type, List<String> _values, int _currentPosition) {
+        caption = _caption;
+        stringDatum = "";
+        stringValues = _values;
+        currentPosition = _currentPosition;
+        settingsType = _type;
+        atomAction = AtomAction.SPINNER;
+        atomFormatting = AtomFormatting.DATA;
     }
 
-    public RSMDeviceInfoAtom(String _caption, RSMDevice.SettingsType _settingsType) {
-        caption = _caption; isHeader = true; settingsType = _settingsType;
-        datum = ""; datumValue = -1;
+
+    public RSMDeviceInfoAtom(String _caption, String _currentValue) { // Status atom
+        caption = _caption;
+        stringDatum = _currentValue;
+        currentPosition = -1;
+        settingsType = SettingsType.NA;
+        atomAction = AtomAction.NONE;
+        atomFormatting = AtomFormatting.STATUS_DATA;
     }
+
+    public RSMDeviceInfoAtom(String _caption, AtomFormatting _formatting) { // Header
+        caption = _caption;
+        stringDatum = "";
+        currentPosition = -1;
+        settingsType = SettingsType.NA;
+        atomAction = AtomAction.NONE;
+        atomFormatting = _formatting;
+    }
+
 }
 
 public class RSMDevice implements Parcelable {
@@ -44,10 +81,6 @@ public class RSMDevice implements Parcelable {
     // Constants
     private int currentSourceRangeResistor;
     public Boolean isValid = false;
-
-    public enum SettingsType {NA, STATUS_ATOM, DEVICE_ID,
-        ENABLE_STIMULATION, AMPLITUDE, FREQUENCY, PULSE_WIDTH, JITTER_LEVEL
-    };
 
     // Device identification information
     private byte[] deviceID;
@@ -65,6 +98,9 @@ public class RSMDevice implements Parcelable {
     private Integer lastUpdate; // time since last update of data in seconds
     private short batteryVoltage; // battery voltage in value from ADC
 
+    private int[] stimAmplitudeValues;
+    private int[] stimFrequencyValues;
+    private int[] pulseWidthValues;
 
     public RSMDevice() {
         String deviceIDStr = "ID00";
@@ -162,37 +198,6 @@ public class RSMDevice implements Parcelable {
         return buf.array();
     }
 
-    public String getAmplitudeString() {
-        float amp = 1e6f * 0.997f * stimulationCurrentSetting /
-                (16 * currentSourceRangeResistor);
-        return String.format("%.0f", amp);
-
-    }
-
-    public float getMaxAmplitude() {
-        return ( 0.997f * 127 * 1e6f / (16 * currentSourceRangeResistor) );
-    }
-
-    public void setStimCurrent(float amplitude) {
-        int cur = (int) ( amplitude * 16.0f * currentSourceRangeResistor / 0.997f / 1e6f );
-        if (cur > 127) {
-            // log bug?
-            stimulationCurrentSetting = 127;
-        } else if (cur < 0) {
-            stimulationCurrentSetting = 0;
-        } else {
-            stimulationCurrentSetting = (byte) cur;
-        }
-    }
-
-    public void setPulseWidth(short value) {
-        stimulationWidth = value;
-    }
-
-    public short getPulseWidth() {
-        return stimulationWidth;
-    }
-
     public void enableStimulation() {
         stimulationEnabled = 1;
     }
@@ -232,6 +237,43 @@ public class RSMDevice implements Parcelable {
     }
 
 
+    public String getAmplitudeString() {
+        float amp = 1e6f * 0.997f * stimulationCurrentSetting /
+                (16 * currentSourceRangeResistor);
+        return String.format("%.0f", amp);
+
+    }
+
+    public int getStimAmplitude() {
+        // current stimulation amplitude in microAmps
+        return (int)( 1e6f * 0.997f * stimulationCurrentSetting /
+                (16 * currentSourceRangeResistor) );
+    }
+
+    public float getMaxAmplitude() {
+        return ( 0.997f * 127 * 1e6f / (16 * currentSourceRangeResistor) );
+    }
+
+    public void setStimCurrent(float amplitude) {
+        int cur = (int) ( amplitude * 16.0f * currentSourceRangeResistor / 0.997f / 1e6f );
+        if (cur > 127) {
+            // log bug?
+            stimulationCurrentSetting = 127;
+        } else if (cur < 0) {
+            stimulationCurrentSetting = 0;
+        } else {
+            stimulationCurrentSetting = (byte) cur;
+        }
+    }
+
+    public void setPulseWidth(short value) {
+        stimulationWidth = value;
+    }
+
+    public short getPulseWidth() {
+        return stimulationWidth;
+    }
+
     public float getMinFrequency() {
         return 15.26f; // 1,000,000 / 65,535
     }
@@ -253,6 +295,54 @@ public class RSMDevice implements Parcelable {
 
     }
 
+    public int getStimFrequency() {
+        return (int) (1e6f / stimulationPeriod);
+    }
+
+    public int getClosestValueInList(int value, int[] list) {
+        int minDistance = Math.abs(value - list[0]);
+        int p = 0;
+        for (int i = 1; i < list.length; i++) {
+            if (Math.abs(value - list[i]) < minDistance) {
+                minDistance = Math.abs(value - list[i]);
+                p = i;
+            }
+        }
+
+        if (minDistance != 0) {
+            Log.d("getClosest",
+                    "value not found in list" + value + ". closest is " + list[p]);
+        }
+
+        return p;
+    }
+
+    public void setStimAmplitudeFromList(int position) {
+        if (position < stimAmplitudeValues.length)
+            setStimCurrent(stimAmplitudeValues[position]);
+        else
+            Log.d("initialization issue!", "empty stimAmplitudeValues list");
+    }
+
+    public void setStimFrequencyFromList(int position) {
+        if (position < stimFrequencyValues.length)
+            setStimPeriod(stimFrequencyValues[position]);
+        else
+            Log.d("initialization issue!", "empty stimFrequencyValues list");
+    }
+
+    public void setPulseWidthFromList(int position) {
+        if (position < pulseWidthValues.length)
+            setPulseWidth((short) pulseWidthValues[position]);
+        else
+            Log.d("initialization issue!", "empty pulseWidthValues list");
+    }
+
+
+    // Jitter is special, because the value we set is actually a shift amount.
+    //  0 = no jitter, 1 = +/- 0.5 ms, 2 = +/- 1 ms, 3 = +/- 2 ms
+    //  the maximum jitter, +/- 2 ms corresponds to a maximum stim frequency of 250 Hz minus epsilon
+    //  where epsilon is determined by pulsewidth
     public int getJitterLevel() {
         return jitterLevel;
     }
@@ -297,42 +387,77 @@ public class RSMDevice implements Parcelable {
             return "no data";
     }
 
-    public List<RSMDeviceInfoAtom> getDeviceInfoList(Context context) {
-        List deviceInfoList = new ArrayList<RSMDeviceInfoAtom>();
-
-        Resources res = context.getResources();
-        deviceInfoList.add(new RSMDeviceInfoAtom("Device Info", SettingsType.NA));
-        deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.deviceIDlabel),
-                getDeviceID(),  SettingsType.DEVICE_ID));
-        deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.firmwareLabel),
-                Byte.toString(firmwareVersion), SettingsType.STATUS_ATOM));
-
-        deviceInfoList.add(new RSMDeviceInfoAtom("Stimulation Settings", SettingsType.NA));
-        deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.stimEnabledLabel),
-                getStimulationEnabledState(), SettingsType.ENABLE_STIMULATION));
-        deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.stimAmplitudeLabel),
-                getAmplitudeString() + " µV", SettingsType.AMPLITUDE));
-        deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.stimFrequencyLabel),
-                getStimFrequencyString() + " Hz", SettingsType.FREQUENCY));
-        deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.pulseWidthLabel),
-                Short.toString(stimulationWidth) + " µs", SettingsType.PULSE_WIDTH));
-        deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.jitterLabel),
-                getJitterLevel(), SettingsType.JITTER_LEVEL));
-
-        deviceInfoList.add(new RSMDeviceInfoAtom("Device Status", SettingsType.STATUS_ATOM));
-        deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.uptimeLabel),
-                getUptimeString(), SettingsType.STATUS_ATOM));
-        deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.batteryVoltageLabel),
-                getBatteryVoltageString() +" mV",  SettingsType.STATUS_ATOM));
-        deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.lastUpdateLabel),
-                getLastUpdateString(), SettingsType.STATUS_ATOM));
-
-        return deviceInfoList;
+    public List<String> addUnitsToValueList(int[] values, String unitLabel) {
+        List<String> valueStrings = new ArrayList<String>();
+        for (int val : values) {
+            valueStrings.add(String.valueOf(val) + " " + unitLabel);
+        }
+        return valueStrings;
     }
 
+    public List<RSMDeviceInfoAtom> getDeviceInfoList(Context context, boolean includeStatus) {
+        Resources res = context.getResources();
+        List deviceInfoList = new ArrayList<RSMDeviceInfoAtom>();
 
-    public void showSettingsDialog(Context context, SettingsType whichSetting) {
+        deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.deviceInfoHeader),
+                RSMDeviceInfoAtom.AtomFormatting.HEADER));
 
+        deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.deviceIDlabel),
+                RSMDeviceInfoAtom.SettingsType.DEVICE_ID,
+                RSMDeviceInfoAtom.AtomFormatting.DATA,
+                RSMDeviceInfoAtom.AtomAction.DIALOG,
+                getDeviceID()));
+
+        if (includeStatus) {
+            deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.firmwareLabel),
+                    Byte.toString(firmwareVersion)));
+        }
+
+        deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.stimSettingsHeader),
+                RSMDeviceInfoAtom.AtomFormatting.HEADER));
+
+        deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.stimEnabledLabel),
+                RSMDeviceInfoAtom.SettingsType.ENABLE_STIMULATION,
+                RSMDeviceInfoAtom.AtomFormatting.DATA,
+                RSMDeviceInfoAtom.AtomAction.TOGGLE_BUTTON,
+                getStimulationEnabledState()));
+
+        stimAmplitudeValues = res.getIntArray(R.array.stimAmplitudeValues);
+        deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.stimAmplitudeLabel),
+                RSMDeviceInfoAtom.SettingsType.AMPLITUDE,
+                addUnitsToValueList(stimAmplitudeValues, res.getString(R.string.stimAmplitudeUnit)),
+                getClosestValueInList(getStimAmplitude(), stimAmplitudeValues)));
+
+        stimFrequencyValues = res.getIntArray(R.array.stimFrequencyValues);
+        deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.stimFrequencyLabel),
+                RSMDeviceInfoAtom.SettingsType.FREQUENCY,
+                addUnitsToValueList(stimFrequencyValues, res.getString(R.string.stimFrequencyUnit)),
+                getClosestValueInList(getStimFrequency(), stimFrequencyValues)));
+
+
+        pulseWidthValues = res.getIntArray(R.array.pulseWidthValues);
+        deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.pulseWidthLabel),
+                RSMDeviceInfoAtom.SettingsType.PULSE_WIDTH,
+                addUnitsToValueList(pulseWidthValues, res.getString(R.string.pulseWidthUnit)),
+                getClosestValueInList(getPulseWidth(), pulseWidthValues)));
+
+        deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.jitterLabel),
+                RSMDeviceInfoAtom.SettingsType.JITTER_LEVEL,
+                Arrays.asList(res.getStringArray(R.array.jitter_levels)),
+                getJitterLevel()));
+
+        if (includeStatus) {
+            deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.deviceStatusHeader),
+                    RSMDeviceInfoAtom.AtomFormatting.STATUS_HEADER));
+            deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.uptimeLabel),
+                    getUptimeString()));
+            deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.batteryVoltageLabel),
+                    getBatteryVoltageString() + " mV"));
+            deviceInfoList.add(new RSMDeviceInfoAtom(res.getString(R.string.lastUpdateLabel),
+                    getLastUpdateString()));
+        }
+
+        return deviceInfoList;
     }
 
     // PARCELABLE Interface

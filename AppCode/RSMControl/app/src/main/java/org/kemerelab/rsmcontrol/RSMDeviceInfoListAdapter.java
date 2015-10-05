@@ -1,16 +1,15 @@
 package org.kemerelab.rsmcontrol;
 
 import android.content.Context;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.ListView;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -29,7 +28,7 @@ public class RSMDeviceInfoListAdapter extends ArrayAdapter<RSMDeviceInfoAtom> {
     }
 
     public interface RSMDeviceInfoSpinnerSelectionListener {
-        public void onSpinnerSelectionListener(RSMDevice.SettingsType settingsType, int spinnerPosition);
+        public void onSpinnerSelectionListener(RSMDeviceInfoAtom.SettingsType settingsType, int spinnerPosition);
     }
 
     RSMDeviceInfoSpinnerSelectionListener spinnerListener;
@@ -48,18 +47,18 @@ public class RSMDeviceInfoListAdapter extends ArrayAdapter<RSMDeviceInfoAtom> {
     @Override
     public int getItemViewType(int position) {
         RSMDeviceInfoAtom p = getItem(position);
-        if (p.isHeader) {
+        if ((p.atomFormatting == RSMDeviceInfoAtom.AtomFormatting.HEADER) ||
+                (p.atomFormatting == RSMDeviceInfoAtom.AtomFormatting.STATUS_HEADER)){
             return 3; // Headers - formatted special!
         }
         else {
-            if (p.settingsType == RSMDevice.SettingsType.STATUS_ATOM) {
-                return 2; // Status info are always display only
-            }
-            else {
-                if (p.datumValue >= 0)
-                    return 1;  // Should be a spinner
-                else
-                    return 0; // Should be a selector dialog or (textview-based) button
+            switch (p.atomAction) {
+                case NONE:
+                    return 2;
+                case SPINNER:
+                    return 1;
+                default:
+                    return 0;
             }
         }
     }
@@ -69,7 +68,7 @@ public class RSMDeviceInfoListAdapter extends ArrayAdapter<RSMDeviceInfoAtom> {
         TextView datum;
         TextView header;
         Spinner datumValues;
-        RSMDevice.SettingsType settingsType; // used by spinner callbacks
+        RSMDeviceInfoAtom.SettingsType settingsType; // used by spinner callbacks
     }
 
     @Override
@@ -82,18 +81,19 @@ public class RSMDeviceInfoListAdapter extends ArrayAdapter<RSMDeviceInfoAtom> {
             holder.settingsType = p.settingsType;
             LayoutInflater vi;
             vi = LayoutInflater.from(getContext());
-            if (p.isHeader) {
+            if ((p.atomFormatting == RSMDeviceInfoAtom.AtomFormatting.HEADER) ||
+                    (p.atomFormatting == RSMDeviceInfoAtom.AtomFormatting.STATUS_HEADER)) {
                 v = vi.inflate(R.layout.device_info_header, null);
                 holder.header = (TextView) v.findViewById(R.id.SectionHeading);
                 v.setTag(holder);
             } else {
-                switch (p.settingsType) {
-                    case STATUS_ATOM:
+                switch (p.atomAction) {
+                    case NONE:
                         v = vi.inflate(R.layout.device_info_status_atom, null);
                         holder.caption = (TextView) v.findViewById(R.id.Caption);
                         holder.datum = (TextView) v.findViewById(R.id.Data);
                         break;
-                    case ENABLE_STIMULATION:
+                    case TOGGLE_BUTTON:
                         if (displayOnly)
                             v = vi.inflate(R.layout.device_info_atom, null);
                         else
@@ -101,7 +101,7 @@ public class RSMDeviceInfoListAdapter extends ArrayAdapter<RSMDeviceInfoAtom> {
                         holder.caption = (TextView) v.findViewById(R.id.Caption);
                         holder.datum = (TextView) v.findViewById(R.id.Data);
                         break;
-                    case JITTER_LEVEL:
+                    case SPINNER:
                         if (displayOnly) {
                             v = vi.inflate(R.layout.device_info_atom, null);
                             holder.caption = (TextView) v.findViewById(R.id.Caption);
@@ -111,6 +111,10 @@ public class RSMDeviceInfoListAdapter extends ArrayAdapter<RSMDeviceInfoAtom> {
                             v = vi.inflate(R.layout.device_info_atom_spinner, null);
                             holder.caption = (TextView) v.findViewById(R.id.Caption);
                             holder.datumValues = (Spinner) v.findViewById(R.id.DataSpinner);
+                            ArrayAdapter<String> adapter = new ArrayAdapter<String>(getContext(),
+                                    android.R.layout.simple_spinner_item, p.stringValues);
+                            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                            holder.datumValues.setAdapter(adapter);
                             holder.datumValues.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                                 @Override
                                 public void onItemSelected(AdapterView<?> parentView,
@@ -143,26 +147,27 @@ public class RSMDeviceInfoListAdapter extends ArrayAdapter<RSMDeviceInfoAtom> {
         }
 
         // Actually update values!
-        if (p.isHeader) {
+        if ((p.atomFormatting == RSMDeviceInfoAtom.AtomFormatting.HEADER) ||
+                (p.atomFormatting == RSMDeviceInfoAtom.AtomFormatting.STATUS_HEADER)) {
             holder.header.setText(p.caption);
         }
         else {
             holder.caption.setText(p.caption);
-            switch (p.settingsType) {
-                case JITTER_LEVEL:
+            switch (p.atomAction) {
+                case SPINNER:
                     if (displayOnly) {
-                        String[] jitterValues = getContext().getResources().getStringArray(R.array.jitter_levels);
-                        holder.datum.setText(jitterValues[p.datumValue]);
+                        holder.datum.setText(p.stringValues.get(p.currentPosition));
                     } else {
-                        holder.datumValues.setSelection(p.datumValue);
+                        holder.datumValues.setSelection(p.currentPosition);
                         holder.datumValues.setEnabled(isEnabled);
                         holder.datumValues.setClickable(isEnabled);
                     }
                     break;
-                case STATUS_ATOM:
-                case ENABLE_STIMULATION:
+                case NONE:
+                case TOGGLE_BUTTON:
+                case DIALOG:
                 default:
-                    holder.datum.setText(p.datum);
+                    holder.datum.setText(p.stringDatum);
                     break;
             }
         }

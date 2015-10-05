@@ -52,13 +52,7 @@ public class NFCWriteActivity extends NfcTagWriterActivity {
 
         ListView lv = (ListView) findViewById(R.id.deviceInfoToBeWritten);
 
-        List<RSMDeviceInfoAtom> deviceInfoList = rsmDevice.getDeviceInfoList(this);
-        ListIterator<RSMDeviceInfoAtom> iter = deviceInfoList.listIterator();
-        while (iter.hasNext()) {
-            if(iter.next().settingsType == RSMDevice.SettingsType.STATUS_ATOM) {
-                iter.remove();
-            }
-        }
+        List<RSMDeviceInfoAtom> deviceInfoList = rsmDevice.getDeviceInfoList(this, false);
         RSMDeviceInfoListAdapter devAdapter = new RSMDeviceInfoListAdapter(this, deviceInfoList, true, false);
         lv.setAdapter(devAdapter);
 

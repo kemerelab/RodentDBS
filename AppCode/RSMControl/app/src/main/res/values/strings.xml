@@ -4,13 +4,22 @@
     <string name="action_settings">Settings</string>
 
     <string name="nfcStatusString">NFC Status</string>
+    <string name="deviceInfoHeader">Device Info</string>
+    <string name="stimSettingsHeader">Stimulation Settings</string>
+    <string name="deviceStatusHeader">Device Status</string>
+
     <string name="deviceIDlabel">Device ID</string>
     <string name="firmwareLabel">Firmware Version</string>
     <string name="stimEnabledLabel">Stimulation</string>
     <string name="enableSwitchLabel">Stimulation</string>
+
     <string name="stimFrequencyLabel">Stimulation Frequency</string>
+    <string name="stimFrequencyUnit">Hz</string>
     <string name="stimAmplitudeLabel">Stimulaton Amplitude</string>
+    <string name="stimAmplitudeUnit">µA</string>
     <string name="pulseWidthLabel">Pulse width</string>
+    <string name="pulseWidthUnit">µs</string>
+
     <string name="jitterLabel">Jitter level</string>
     <string-array name="jitter_levels">
         <item>no jitter</item>

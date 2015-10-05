@@ -23,7 +23,6 @@
         android:layout_marginRight="20px"
         android:typeface="monospace"
         android:id="@+id/DataSpinner"
-        android:entries="@array/jitter_levels"
         android:spinnerMode="dropdown" />
 
 
