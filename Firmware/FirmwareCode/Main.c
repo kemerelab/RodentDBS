@@ -152,12 +152,12 @@ void main(void)
 
     while (1) {
 
-        if ((RF430InterruptTriggered != 0) || (ReadNFCDataCounter <= 0 )) {
+        if ((RF430InterruptTriggered != 0) || (ReadNFCDataCounter == 0 )) {
             if (RF430InterruptTriggered != 0) {
                 ClearNFCInterrupts();
                 RF430InterruptTriggered = 0;
             }
-            if (ReadDeviceParams(&NewStimParams) != 0) {
+            if (ReadDeviceParams(&NewStimParams) == 0) { // Successfully read params
                 StimParamsChanged = memcmp((unsigned char*)&NewStimParams,
                         (unsigned char*)&(DeviceData.StimParams), sizeof(NewStimParams));
                 if (StimParamsChanged != 0) {
@@ -179,15 +179,22 @@ void main(void)
                     }
                     DeviceData.Status.LastUpdate = DeviceData.Status.Uptime;
                 }
+                ReadNFCDataCounter = READ_NFC_DATA_PERIOD-1;
             }
-            ReadNFCDataCounter = READ_NFC_DATA_PERIOD-1;
+            else { // Device wasn't ready, so try again in 5 ms
+                ReadNFCDataCounter = 5;
+            }
             KernelSleep();
         }
-        else if (UpdateNFCDataCounter <= 0) {
-            UpdateDeviceStatus();
-            UpdateNFCDataCounter = UPDATE_NFC_DATA_PERIOD-1;
+        else if (UpdateNFCDataCounter == 0) { // Device wasn't ready, so try again in 5 ms
+            if (UpdateDeviceStatus() == 0) {
+                UpdateNFCDataCounter = UPDATE_NFC_DATA_PERIOD-1;
+            }
+            else {
+                UpdateNFCDataCounter = 5;
+            }
         }
-        else if (CheckBatteryCounter <= 0) {
+        else if (CheckBatteryCounter == 0) {
             CheckBattery();
             CheckBatteryCounter = CHECK_BATTERY_PERIOD-1;
         }
@@ -202,7 +209,7 @@ void main(void)
 #pragma vector=TIMER1_A0_VECTOR
 __interrupt void MasterClockISR (void)
 {
-    static unsigned int SecondCounter = 1000;
+    static unsigned int SecondCounter = 1000; // should be 1000!
 
     if (--SecondCounter == 0) {
         DeviceData.Status.Uptime += 1;
@@ -210,9 +217,12 @@ __interrupt void MasterClockISR (void)
     }
 
     // Timer variables for each subprocess that runs in main loop
-    CheckBatteryCounter--;
-    UpdateNFCDataCounter--;
-    ReadNFCDataCounter--;
+    if (CheckBatteryCounter > 0)
+        CheckBatteryCounter--;
+    if (UpdateNFCDataCounter > 0)
+        UpdateNFCDataCounter--;
+    if (ReadNFCDataCounter > 0)
+        ReadNFCDataCounter--;
 
     // Time variable for blinking LED
     LEDCounter--;

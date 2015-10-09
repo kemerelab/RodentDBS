@@ -148,21 +148,21 @@ int ReadDeviceParams(StimParams_t *NewStimParams) {
     InitializeI2CSlave(RF430_I2C_ADDRESS);
 
     if ((ReadRegister_WordAddress(STATUS_REG) & (READY | RF_BUSY | CRC_ACTIVE)) != READY) {
-        return 0;
+        return -1;
     }
     else {
         WriteRegister_WordAddress(CONTROL_REG, 0x00); // Disable RF
         //__delay_cycles(20);
         ReadMemory_WordAddress(STIMPARAMS_ADDR, (unsigned char*)NewStimParams, sizeof(NewStimParams));
         WriteRegister_WordAddress(CONTROL_REG, INTO_HIGH + INT_ENABLE + RF_ENABLE);
-        return 1;
+        return 0;
     }
 
 }
 
 I2C_StatusRecord Status_I2C = {.MemoryAddress = {0x00, STATUS_ADDR}};
 
-void UpdateDeviceStatus(void) {
+int UpdateDeviceStatus(void) {
 
     Status_I2C.Status = DeviceData.Status;
     InitializeI2CSlave(RF430_I2C_ADDRESS);
@@ -170,12 +170,13 @@ void UpdateDeviceStatus(void) {
 //    memcpy(statusString_I2C+2, (unsigned char *)&(DeviceData.Status), sizeof(DeviceStatus_t));
 
     if ((ReadRegister_WordAddress(STATUS_REG) & (READY | RF_BUSY | CRC_ACTIVE)) != READY) {
-        return;
+        return -1;
     }
     else {
         WriteRegister_WordAddress(CONTROL_REG, 0x00); // Disable RF and interrupts
         WriteContinuous_I2C((unsigned char *)&Status_I2C, sizeof(I2C_StatusRecord));
         WriteRegister_WordAddress(CONTROL_REG, INTO_HIGH + INT_ENABLE + RF_ENABLE);
+        return 0;
     }
 }
 

@@ -151,9 +151,8 @@ extern volatile int RF430InterruptTriggered;
 extern const NDEF_ExternalRecord_t* HWRecordPointer;
 
 void NFCInterfaceSetup(void);
-void UpdateDeviceStatus(void);
+int UpdateDeviceStatus(void);
 int ReadDeviceParams(StimParams_t *NewStimParams);
-void WriteBatteryRecord();
 void ClearNFCInterrupts(void);
 
 #endif
