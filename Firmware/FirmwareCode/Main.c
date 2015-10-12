@@ -97,6 +97,7 @@ volatile unsigned int LEDState = 0;
 #define HEARTBEAT_ON 25
 unsigned int HeartBeatPattern_StimOff[] = {HEARTBEAT_ON, 1500-HEARTBEAT_ON, HEARTBEAT_ON, 1500-HEARTBEAT_ON}; // (on, off, on, off)
 unsigned int HeartBeatPattern_StimOn[] = {HEARTBEAT_ON, 250, HEARTBEAT_ON, 1500 - 2*HEARTBEAT_ON - 250};
+unsigned int HeartBeatPattern_Error[] = {HEARTBEAT_ON, 250, HEARTBEAT_ON, 250};
 unsigned int *HeartBeatPattern;
 volatile unsigned int LEDCounter = HEARTBEAT_ON;
 
@@ -112,7 +113,7 @@ void MasterClockSetup(void){
     TA1CCTL2 = OUTMOD_7;           //CCR2 reset/set
     TA1CCR2 = PowerLEDIntensity;   //pin 2.5 brightness (PWM duty cycle versus TA1CCR0)
 
-    HeartBeatPattern = HeartBeatPattern_StimOff;
+    HeartBeatPattern = HeartBeatPattern_Error;
 }
 
 inline void KernelSleep(void) {
@@ -160,6 +161,11 @@ void main(void)
             if (ReadDeviceParams(&NewStimParams) == 0) { // Successfully read params
                 StimParamsChanged = memcmp((unsigned char*)&NewStimParams,
                         (unsigned char*)&(DeviceData.StimParams), sizeof(NewStimParams));
+                if (DeviceData.StimParams.Enabled != 0)
+                    HeartBeatPattern = HeartBeatPattern_StimOn;
+                else
+                    HeartBeatPattern = HeartBeatPattern_StimOff;
+
                 if (StimParamsChanged != 0) {
                     DisableStimulation();
                     // NOTE - WE'RE NOT DOING ANY ERROR CHECKING! MAKE SURE PARAMETERS
@@ -183,6 +189,7 @@ void main(void)
             }
             else { // Device wasn't ready, so try again in 5 ms
                 ReadNFCDataCounter = 5;
+                HeartBeatPattern = HeartBeatPattern_Error;
             }
             KernelSleep();
         }
