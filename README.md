@@ -17,7 +17,8 @@ Near Field Communication (NFC).
 <img src="Images/ModuleTopView.png" width="512"> <img src="Images/ModuleSideView.png" width="512">
 
 The most recent version of the hardware is about 1/4" thick including a CR2032 battery, and a
-little larger than a quarter in footprint. Battery life is about 200 hours.
+little larger than a quarter in footprint. Battery life is about 200 hours. In photos above,
+major grid is 1/2".
 
 #### Biphasic Constant Current Stimulation
 <img src="Images/Waveform.png" width="512"> <img src="Images/MultiplePulses.png" width="512">
