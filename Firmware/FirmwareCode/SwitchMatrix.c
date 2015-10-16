@@ -53,25 +53,11 @@
 #include "Board.h"
 
 stimulationStateEnum NextStimulationState = OFF;
-int disableStimulationFlag = 0;
-
-inline void SetupSwitchMatrix(void) {
-    //switch pin setup
-    P1DIR |= S_OUT1 + S_OUT2 + S_IN1 + S_IN2;     //set pins 1.1, 1.2, 1.3, and 1.4 as outputs
-    SetSwitchesOff();
-    disableStimulationFlag = 0;
-    TA0CTL = TASSEL_2 + MC_2; // Use SMCLK for source (1 MHz)
-}
-
-inline void EnableStimulation(void) {
-    TA0CCR0 = DeviceData.StimParams.Period;   // First interrupt period
-    NextStimulationState = FORWARD;
-    TA0CCTL0 = CCIE;    // Enable interrupt
-}
-
-inline void DisableStimulation (void) {
-    disableStimulationFlag = 1;
-}
+volatile int disableStimulationFlag;
+volatile int singlePhasePulseWidth;
+volatile int interpulseInterval;
+volatile int jitterOffset;
+volatile int jitterShift;
 
 inline void SetSwitchesOff(void) {
     P1OUT &= ~(S_OUT1 + S_OUT2 + S_IN1 + S_IN2);
@@ -86,7 +72,7 @@ inline void SetSwitchesForward(void) {
 
 inline void SetSwitchesReverse(void) {
     P1OUT &= ~(S_IN1 + S_OUT2);
-    P1OUT |= ~(S_OUT1 + S_IN2);
+    P1OUT |= (S_OUT1 + S_IN2);
     NextStimulationState = GROUNDED;
 }
 
@@ -96,40 +82,79 @@ inline void SetSwitchesGround(void) {
     NextStimulationState = FORWARD;
 }
 
+void SetupSwitchMatrix(void) {
+    //switch pin setup
+    P1DIR |= S_OUT1 + S_OUT2 + S_IN1 + S_IN2;     //set pins 1.1, 1.2, 1.3, and 1.4 as outputs
+    SetSwitchesOff();
+    disableStimulationFlag = 0;
+    TA0CTL = TASSEL_2 + MC_2; // Use SMCLK for source (1 MHz)
+
+    singlePhasePulseWidth = DeviceData.StimParams.PulseWidth;
+    interpulseInterval = DeviceData.StimParams.Period - singlePhasePulseWidth - singlePhasePulseWidth;
+
+    jitterOffset = 0;
+    jitterShift = 0;
+}
+
+inline void SetPulseIntervals(uint16_t Period, uint16_t PulseWidth) {
+    singlePhasePulseWidth = PulseWidth;
+    interpulseInterval = Period - PulseWidth - PulseWidth;
+}
+
+inline void SetJitterOffset(uint8_t JitterLevel) {
+    if (JitterLevel == 0) {
+        jitterOffset = 0;
+    }
+    if (JitterLevel > 3)
+        JitterLevel = 3;
+    jitterShift = 3 - JitterLevel;
+    jitterOffset = 1999 >> jitterShift; // subtract off half of maximum jitter!
+}
+
+inline void EnableStimulation(void) {
+    TA0CCR0 = DeviceData.StimParams.Period;   // First interrupt period
+    NextStimulationState = FORWARD;
+    TA0CCTL0 = CCIE;    // Enable interrupt
+}
+
+
+
+
+inline void DisableStimulation (void) {
+    if (DeviceData.StimParams.Enabled == 0) {
+    	TA0CCTL0 = ~CCIE;
+    	SetSwitchesGround();
+        NextStimulationState = OFF;
+    }
+}
+
+inline int GetNextJitter(void) {
+    // jitterOffset is set to be half of maximum jitter value
+    // jitter values in table range from 0 to 3999. For different jitter levels, we divide by 4, 2, or 1
+    int jitter = jitterOffset + (jitterValueTable[jitterTableCounter] >> jitterShift);
+    if (jitterTableCounter == 0 )
+        jitterTableCounter = jitterTableLength - 1;
+    else
+    	jitterTableCounter--;
+    return jitter;
+}
 
 #pragma vector = TIMER0_A0_VECTOR
 __interrupt void Timer_A0_ISR(void)
 {
-    switch(NextStimulationState) {
-    case FORWARD:
+    if (NextStimulationState == FORWARD) {
         SetSwitchesForward();
-        CCR0+=DeviceData.StimParams.PulseWidth; //increment CCR0
-        break;
-    case REVERSE:
+        CCR0+=singlePhasePulseWidth; //increment CCR0
+    }
+    else if (NextStimulationState == REVERSE) {
         SetSwitchesReverse();
-        CCR0+=DeviceData.StimParams.PulseWidth; //increment CCR0
-        break;
-    case GROUNDED:
-        SetSwitchesGround();
-        if (disableStimulationFlag) {
-            NextStimulationState = OFF;
-            TA0CCTL0 = ~CCIE;
-        }
-        else {
-            CCR0 += DeviceData.StimParams.Period - \
-               (DeviceData.StimParams.PulseWidth + DeviceData.StimParams.PulseWidth); //increment CCR0
-            if (DeviceData.StimParams.JitterLevel > 0) {
-                CCR0 -= (1999 >> ( 3 - DeviceData.StimParams.JitterLevel)); // subtract off half of jitter level!
-                CCR0 += (jitterValueTable[jitterTableCounter++] >> ( 3 - DeviceData.StimParams.JitterLevel));
-                if (jitterTableCounter >= jitterTableLength)
-                    jitterTableCounter = 0;
-            }
-        }
-        break;
-    case OFF:
-    default: // should never reach here
-        SetSwitchesGround();
-        TA0CCTL0 = ~CCIE;
-        break;
+        CCR0+=singlePhasePulseWidth; //increment CCR0
+    }
+    else {
+    	SetSwitchesGround();
+        TA0CCR0 += interpulseInterval; //increment CCR0
+//		if (DeviceData.StimParams.JitterLevel > 0) {
+//			TA0CCR0 += GetNextJitter();
+//		}
     }
 }

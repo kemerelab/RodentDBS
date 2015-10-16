@@ -133,7 +133,7 @@ void NFCInterfaceSetup(void) {
     //write NDEF memory with full Capability Container + NDEF message
     NDEF_Data.ND.DeviceData = DeviceData;
 //    memcpy(&(NDEF_Data.ND.BinaryMessage), (unsigned char *)&DeviceData, sizeof(DeviceData));
-    WriteContinuous_I2C((unsigned char *)(&NDEF_Data), sizeof(NDEF_Data));
+    WriteContinuous_I2C((unsigned char *)(&NDEF_Data), sizeof(I2C_NDEF_FullRecord));
 
     WriteRegister_WordAddress(INTR_ENABLE_REG, END_OF_WRITE);
     WriteRegister_WordAddress(CONTROL_REG, INTO_HIGH + INT_ENABLE + RF_ENABLE);
@@ -153,7 +153,8 @@ int ReadDeviceParams(StimParams_t *NewStimParams) {
     else {
         WriteRegister_WordAddress(CONTROL_REG, 0x00); // Disable RF
         //__delay_cycles(20);
-        ReadMemory_WordAddress(STIMPARAMS_ADDR, (unsigned char*)NewStimParams, sizeof(NewStimParams));
+        i2c_debug_flag = 1;
+        ReadMemory_WordAddress(STIMPARAMS_ADDR, (unsigned char*)NewStimParams, sizeof(StimParams_t));
         WriteRegister_WordAddress(CONTROL_REG, INTO_HIGH + INT_ENABLE + RF_ENABLE);
         return 0;
     }

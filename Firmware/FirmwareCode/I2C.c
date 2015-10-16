@@ -50,6 +50,8 @@ unsigned int _i2c_tx_byte_count;
 unsigned int _i2c_rx_byte_count;
 unsigned char _i2c_repeated_start_rx;
 
+int i2c_debug_flag = 0;
+
 inline void I2CSetup (void)
 {
 
@@ -131,6 +133,8 @@ void ReadMemory_WordAddress(uint16_t reg_addr,
     __bis_SR_register(CPUOFF + GIE); // Enter LPM0 w/ interrupts (will stall here
                                      //     until all data is TX'd and RX'd).
     IE2 &= ~UCB0RXIE;                // Disable RX interrupt.
+    if (i2c_debug_flag != 0)
+    	i2c_debug_flag = 0;
 }
 
 

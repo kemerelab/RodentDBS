@@ -51,14 +51,14 @@
 
 /* Pins which control the switch matrix. Assumed on Port 1.
  *   Input Current --------  S_IN1 \----------/ S_OUT1 ----|
- *                     |                 V                 |
+ *                     |                 V (STIM_OUT1)     |
  *                     |               BRAIN               |
- *                     |                 ^                 |
+ *                     |                 ^ (STIM_OUT2)     |
  *                     |---  S_IN2 \-----|----/ S_OUT2 ----|------ GND */
-#define S_OUT1 BIT4
-#define S_OUT2 BIT3
-#define S_IN1 BIT1
-#define S_IN2 BIT4
+#define S_OUT1 BIT0
+#define S_OUT2 BIT2
+#define S_IN1 BIT3
+#define S_IN2 BIT1
 
 
 // Reset and interrupt interface for RF430CCL330H (NFC IC)

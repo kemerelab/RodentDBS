@@ -57,18 +57,16 @@
 typedef enum {FORWARD, REVERSE, GROUNDED, OFF} stimulationStateEnum;
 extern stimulationStateEnum NextStimulationState;
 
-extern int disableStimulationFlag;
+extern volatile int disableStimulationFlag;
 
 extern unsigned int jitterTableCounter;
 extern const unsigned int jitterValueTable[];
 extern const unsigned int jitterTableLength;
 
-inline void SetupSwitchMatrix(void);
+void SetupSwitchMatrix(void);
 inline void DisableStimulation (void);
 inline void EnableStimulation(void);
-inline void SetSwitchesOff(void);
-inline void SetSwitchesForward(void);
-inline void SetSwitchesReverse(void);
-inline void SetSwitchesGround(void);
+inline void SetPulseIntervals(uint16_t Period, uint16_t PulseWidth);
+inline void SetJitterOffset(uint8_t JitterLevel);
 
 #endif

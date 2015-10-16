@@ -125,17 +125,17 @@ inline void KernelSleep(void) {
 void main(void)
 {
     StimParams_t NewStimParams = { .Enabled = 0, .Period = 7500, \
-            .Amplitude = 100, .PulseWidth = 600 };
+            .Amplitude = 100, .PulseWidth = 60 };
 
     int StimParamsChanged = 0;
 
     WDTCTL = WDTPW + WDTHOLD;                 // Stop WDT
 
     // Set up system clocks
-    BCSCTL1 = CALBC1_1MHZ;   // Set range
-    DCOCTL = CALDCO_1MHZ;    // Set DCO step + modulation
+    BCSCTL1 = CALBC1_8MHZ;   // Set range
+    DCOCTL = CALDCO_8MHZ;    // Set DCO step + modulation
     BCSCTL3 |= LFXT1S_2;     // LFXT1 = VLO (~12 kHz)
-    BCSCTL2 = DIVS_0;  // Setup SMCLK to be 1 MHz (divide DCO/1)
+    BCSCTL2 = DIVS_3;  // Setup SMCLK to be 1 MHz (divide DCO/8)
 
     // Default - initialize all ports to output
     P1DIR = 0xFF; P2DIR = 0xFF; P3DIR = 0xFF;
@@ -160,28 +160,26 @@ void main(void)
             }
             if (ReadDeviceParams(&NewStimParams) == 0) { // Successfully read params
                 StimParamsChanged = memcmp((unsigned char*)&NewStimParams,
-                        (unsigned char*)&(DeviceData.StimParams), sizeof(NewStimParams));
-                if (DeviceData.StimParams.Enabled != 0)
-                    HeartBeatPattern = HeartBeatPattern_StimOn;
-                else
-                    HeartBeatPattern = HeartBeatPattern_StimOff;
+                        (unsigned char*)&(DeviceData.StimParams), sizeof(StimParams_t));
 
                 if (StimParamsChanged != 0) {
-                    DisableStimulation();
                     // NOTE - WE'RE NOT DOING ANY ERROR CHECKING! MAKE SURE PARAMETERS
                     //   ARE ERROR CHECKED BEFORE TRANSMITTING!
                     DeviceData.StimParams.Period = NewStimParams.Period;
                     DeviceData.StimParams.Amplitude = NewStimParams.Amplitude;
                     SetOutputCurrent(DeviceData.StimParams.Amplitude);
                     DeviceData.StimParams.PulseWidth = NewStimParams.PulseWidth;
+                    SetPulseIntervals(DeviceData.StimParams.Period, DeviceData.StimParams.PulseWidth);
                     DeviceData.StimParams.JitterLevel = NewStimParams.JitterLevel;
+                    SetJitterOffset(DeviceData.StimParams.JitterLevel);
                     DeviceData.StimParams.Enabled = NewStimParams.Enabled;
-                    if (NewStimParams.Enabled != 0) {
-                        EnableStimulation();
+                    if (DeviceData.StimParams.Enabled > 0) {
                         HeartBeatPattern = HeartBeatPattern_StimOn;
+                        EnableStimulation();
                     }
-                    else {
+                    else if (DeviceData.StimParams.Enabled == 0) {
                         HeartBeatPattern = HeartBeatPattern_StimOff;
+                        DisableStimulation();
                     }
                     DeviceData.Status.LastUpdate = DeviceData.Status.Uptime;
                 }

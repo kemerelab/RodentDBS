@@ -47,6 +47,7 @@
 #include "I2C.h"
 #include <stdint.h>
 
+extern int i2c_debug_flag;
 
 inline void I2CSetup (void);
 

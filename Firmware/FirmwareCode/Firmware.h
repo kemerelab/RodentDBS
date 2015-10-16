@@ -93,8 +93,8 @@ extern volatile DeviceData_t DeviceData;
  * place (in ms).
  *
  */
-#define READ_NFC_DATA_PERIOD 60000 // 60 s (and when triggered by interrupt!)
+#define READ_NFC_DATA_PERIOD 5030 // 60 s (and when triggered by interrupt!)
 #define CHECK_BATTERY_PERIOD 20000 // 20 s
-#define UPDATE_NFC_DATA_PERIOD 10000 // every second
+#define UPDATE_NFC_DATA_PERIOD 10000 // every 10 s
 
 #endif /* RATDBS_FIRMWARE_FIRMWARE_H_ */
