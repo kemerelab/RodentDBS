@@ -20,7 +20,7 @@ The most recent version of the hardware is about 1/4" thick including a CR2032 b
 little larger than a quarter in footprint. Battery life is about 200 hours.
 
 #### Biphasic Constant Current Stimulation
-<img src="Waveform.png" width="512"> <img src="MultiplePulses.png" width="512">
+<img src="Images/Waveform.png" width="512"> <img src="Images/MultiplePulses.png" width="512">
 
 Current measurements (voltage over the series 10 K resistor)
 for a 90 µA, 60 µs, 120 Hz stimulation settings.
