@@ -23,9 +23,9 @@
     <string name="jitterLabel">Jitter level</string>
     <string-array name="jitter_levels">
         <item>no jitter</item>
-        <item>0-1 µs</item>
-        <item>0-2 µs</item>
-        <item>0-4 µs</item>
+        <item>0-1 ms</item>
+        <item>0-2 ms</item>
+        <item>0-4 ms</item>
     </string-array>
 
     <string name="lastUpdateLabel">Last update</string>
