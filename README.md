@@ -13,5 +13,17 @@ Near Field Communication (NFC).
    - The [PCBs/](PCBs/) directory contains the design files for the printed circuit board
      hardware.
 
+#### Physical Size of Devices In Action
+<img src="Images/ModuleTopView.png" width="512"> <img src="Images/ModuleSideView.png" width="512">
+
+The most recent version of the hardware is about 1/4" thick including a CR2032 battery, and a
+little larger than a quarter in footprint. Battery life is about 200 hours.
+
+#### Biphasic Constant Current Stimulation
+<img src="Waveform.bmp" width="512"> <img src="MultiplePulses.bmp" width="512">
+
+Current measurements (voltage over the series 10 K resistor)
+for a 90 µA, 60 µs, 120 Hz stimulation settings.
+
 Developed by members of the [Kemere Lab](http://rnel.rice.edu) at Rice University.
 
