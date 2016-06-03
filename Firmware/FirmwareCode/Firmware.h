@@ -50,7 +50,7 @@
 extern volatile unsigned char KernelWakeupFlag;                         // status variable
 
 #define PROTOCOL_VERSION 5
-#define DEFAULT_DEVICE_IDSTR "NULL"
+#define DEFAULT_DEVICE_IDSTR "0005"
 
 /* Device ID variables */
 typedef struct __attribute__((__packed__)) DeviceID_t {
@@ -93,7 +93,7 @@ extern volatile DeviceData_t DeviceData;
  * place (in ms).
  *
  */
-#define READ_NFC_DATA_PERIOD 5030 // 60 s (and when triggered by interrupt!)
+#define READ_NFC_DATA_PERIOD 30033 // 30 s (and when triggered by interrupt!)
 #define CHECK_BATTERY_PERIOD 20000 // 20 s
 #define UPDATE_NFC_DATA_PERIOD 10000 // every 10 s
 
