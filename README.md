@@ -26,5 +26,7 @@ major grid is 1/2".
 Current measurements (voltage over the series 10 K resistor)
 for a 90 µA, 60 µs, 120 Hz stimulation settings.
 
-Developed by members of the [Kemere Lab](http://rnel.rice.edu) at Rice University.
+Developed by members of the [Kemere Lab](http://rnel.rice.edu) at Rice University. This work was supported by the National Science Foundation (NSF CAREER Award CBET-1351692) and Texas Instruments, Inc.
+
+<img src="Images/Supporters/NSF.png" width="256"> <img src="Images/Supporters/TI.png" width="256">
 
