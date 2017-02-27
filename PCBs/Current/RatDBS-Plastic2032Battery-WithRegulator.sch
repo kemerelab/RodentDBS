@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE eagle SYSTEM "eagle.dtd">
-<eagle version="7.3.0">
+<eagle version="7.7.0">
 <drawing>
 <settings>
 <setting alwaysvectorfont="no"/>
@@ -7135,6 +7135,21 @@ at 30/07/2012 17:45:58</description>
 <pinref part="VDD10" gate="G$1" pin="VDD"/>
 <pinref part="U1" gate="A" pin="VOUT"/>
 </segment>
+<segment>
+<pinref part="U$1" gate="G$1" pin="VCC"/>
+<wire x1="-167.64" y1="109.22" x2="-170.18" y2="109.22" width="0.1524" layer="91"/>
+<wire x1="-170.18" y1="109.22" x2="-175.26" y2="109.22" width="0.1524" layer="91"/>
+<wire x1="-175.26" y1="109.22" x2="-175.26" y2="116.84" width="0.1524" layer="91"/>
+<pinref part="VDD9" gate="G$1" pin="VDD"/>
+<pinref part="C2" gate="G$1" pin="1"/>
+<wire x1="-154.94" y1="119.38" x2="-170.18" y2="119.38" width="0.1524" layer="91"/>
+<wire x1="-170.18" y1="119.38" x2="-170.18" y2="109.22" width="0.1524" layer="91"/>
+<junction x="-170.18" y="109.22"/>
+<wire x1="-170.18" y1="119.38" x2="-170.18" y2="132.08" width="0.1524" layer="91"/>
+<wire x1="-170.18" y1="132.08" x2="-154.94" y2="132.08" width="0.1524" layer="91"/>
+<junction x="-170.18" y="119.38"/>
+<pinref part="C1" gate="G$1" pin="1"/>
+</segment>
 </net>
 <net name="GND" class="0">
 <segment>
@@ -7479,6 +7494,7 @@ at 30/07/2012 17:45:58</description>
 <wire x1="-200.66" y1="48.26" x2="-200.66" y2="38.1" width="0.1524" layer="91"/>
 <junction x="-213.36" y="48.26"/>
 <pinref part="C3" gate="G$1" pin="1"/>
+<junction x="-200.66" y="48.26"/>
 </segment>
 <segment>
 <wire x1="-182.88" y1="-5.08" x2="-195.58" y2="-5.08" width="0.1524" layer="91"/>
@@ -7489,23 +7505,6 @@ at 30/07/2012 17:45:58</description>
 <wire x1="-182.88" y1="-15.24" x2="-195.58" y2="-15.24" width="0.1524" layer="91"/>
 <wire x1="-195.58" y1="-15.24" x2="-195.58" y2="-5.08" width="0.1524" layer="91"/>
 <wire x1="-210.82" y1="-5.08" x2="-195.58" y2="-5.08" width="0.1524" layer="91"/>
-</segment>
-</net>
-<net name="VDD2" class="0">
-<segment>
-<pinref part="U$1" gate="G$1" pin="VCC"/>
-<wire x1="-167.64" y1="109.22" x2="-170.18" y2="109.22" width="0.1524" layer="91"/>
-<wire x1="-170.18" y1="109.22" x2="-175.26" y2="109.22" width="0.1524" layer="91"/>
-<wire x1="-175.26" y1="109.22" x2="-175.26" y2="116.84" width="0.1524" layer="91"/>
-<pinref part="VDD9" gate="G$1" pin="VDD"/>
-<pinref part="C2" gate="G$1" pin="1"/>
-<wire x1="-154.94" y1="119.38" x2="-170.18" y2="119.38" width="0.1524" layer="91"/>
-<wire x1="-170.18" y1="119.38" x2="-170.18" y2="109.22" width="0.1524" layer="91"/>
-<junction x="-170.18" y="109.22"/>
-<wire x1="-170.18" y1="119.38" x2="-170.18" y2="132.08" width="0.1524" layer="91"/>
-<wire x1="-170.18" y1="132.08" x2="-154.94" y2="132.08" width="0.1524" layer="91"/>
-<junction x="-170.18" y="119.38"/>
-<pinref part="C1" gate="G$1" pin="1"/>
 </segment>
 </net>
 <net name="VDD5" class="0">

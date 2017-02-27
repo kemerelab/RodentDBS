@@ -89,5 +89,6 @@
     </content>
     <orderEntry type="jdk" jdkName="Android API 16 Platform" jdkType="Android SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" exported="" name="_Users_ckemere_Library_Android_sdk_platforms_android_16_android_jar-android-16" level="project" />
   </component>
 </module>
