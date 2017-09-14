@@ -43,11 +43,15 @@
 #ifndef RATDBS_FIRMWARE_BOARD_H_
 #define RATDBS_FIRMWARE_BOARD_H_
 
-// Status LED
+// Status LEDs
 #define STATUS_LED_PDIR P2DIR
 #define STATUS_LED_PSEL P2SEL
 #define STATUS_LED_POUT P2OUT
-#define STATUS_LED_PIN BIT5
+#define STATUS_LED_PIN BIT4
+#define SWAP_LED_PDIR P2DIR
+#define SWAP_LED_PSEL P2SEL
+#define SWAP_LED_POUT P2OUT
+#define SWAP_LED_PIN BIT5
 
 /* Pins which control the switch matrix. Assumed on Port 1.
  *   Input Current --------  S_IN1 \----------/ S_OUT1 ----|

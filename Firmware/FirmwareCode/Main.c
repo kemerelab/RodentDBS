@@ -53,6 +53,7 @@
 #include "Firmware.h"
 #include "Board.h"
 #include "BatteryStatus.h"
+#include "JitterTable.h"
 #include "SwitchMatrix.h"
 #include "I2C.h"
 #include "NFCInterface.h"
@@ -201,6 +202,14 @@ void main(void)
         }
         else if (CheckBatteryCounter == 0) {
             CheckBattery();
+            if (DeviceData.Status.BatteryVoltage < 603) {
+                STATUS_LED_PDIR = SWAP_LED_PIN;    //set Red LED as output at low voltage
+                STATUS_LED_PSEL = SWAP_LED_PIN;
+            }
+            else {
+                STATUS_LED_PDIR = STATUS_LED_PIN;    //set Green LED as output at high volteage
+                STATUS_LED_PSEL = STATUS_LED_PIN;
+            }
             CheckBatteryCounter = CHECK_BATTERY_PERIOD-1;
         }
 

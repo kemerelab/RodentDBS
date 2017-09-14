@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "firmware.h": "c",
+        "nfcinterface.h": "c"
+    }
+}

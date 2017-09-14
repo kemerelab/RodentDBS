@@ -131,7 +131,7 @@ inline void DisableStimulation (void) {
 inline int GetNextJitter(void) {
     // jitterOffset is set to be half of maximum jitter value
     // jitter values in table range from 0 to 3999. For different jitter levels, we divide by 4, 2, or 1
-    int jitter = jitterOffset + (jitterValueTable[jitterTableCounter] >> jitterShift);
+    int jitter = - jitterOffset + (jitterValueTable[jitterTableCounter] >> jitterShift);
     if (jitterTableCounter == 0 )
         jitterTableCounter = jitterTableLength - 1;
     else
@@ -153,8 +153,8 @@ __interrupt void Timer_A0_ISR(void)
     else {
     	SetSwitchesGround();
         TA0CCR0 += interpulseInterval; //increment CCR0
-//		if (DeviceData.StimParams.JitterLevel > 0) {
-//			TA0CCR0 += GetNextJitter();
-//		}
+		if (DeviceData.StimParams.JitterLevel > 0) {
+			TA0CCR0 += GetNextJitter();
+		}
     }
 }

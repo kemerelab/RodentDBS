@@ -46,16 +46,18 @@
 #include "BatteryStatus.h"
 #include "Firmware.h"
 #include "NFCInterface.h"
+#include "Board.h"
 
 int BatteryUpdateCounter = 0;
 /*
  * Initialize the ADC10 to prepare to measure the battery voltage.
  */
 void BatteryStatusSetup(void){  //ADC10 setup function
-    ADC10CTL0 = SREF_1 + REF2_5V; // User Vref+ as positive rail and Vss as negative; Use 2.5 V Vref
+    ADC10CTL0 = REF2_5V;// Use Internal Vref+ as positive rail and Vss as negative; Use 2.5 V Vref
     ADC10CTL0 |= ADC10SR; // Set low speed sampling to minimize reference buffer power
     ADC10CTL0 |= ADC10SHT_3; // Sample for longest period (64 clks)
-    ADC10CTL1 |= INCH_11; // For data source, use internal voltage, (Vcc-Vss)/2
+    ADC10AE0 |= BIT4; // Enable A4 input
+    ADC10CTL1 = INCH_4; // For data source, use internal voltage, (Vcc-Vss)/2
     ADC10CTL1 |= ADC10SSEL_3; // Use the master clock for the ADC (set as 8 MHz)
 }
 

@@ -113,7 +113,7 @@ public class RSMDevice implements Parcelable {
         uptime = 0;
         lastUpdate = 0;
         batteryVoltage = 0;
-        firmwareVersion = 5;
+        firmwareVersion = 6;
         isValid = false;
         currentSourceRangeResistor = 47000;
     }
@@ -261,7 +261,7 @@ public class RSMDevice implements Parcelable {
     public void setStimCurrent(float amplitude) {
         int cur = (int) ( amplitude * 16.0f * currentSourceRangeResistor / 0.997f / 1e6f );
         if (cur > 127) {
-            // log bug?
+            // log bug. signed int to byte
             stimulationCurrentSetting = 127;
         } else if (cur < 0) {
             stimulationCurrentSetting = 0;
@@ -386,7 +386,7 @@ public class RSMDevice implements Parcelable {
 
     public String getBatteryVoltageString() {
         if (batteryVoltage > 0)
-            return String.valueOf((int) batteryVoltage * 2500 * 2 / 1024);
+            return String.valueOf((int) batteryVoltage * 2500 * 18/5 / 1024);
         else
             return "no data";
     }

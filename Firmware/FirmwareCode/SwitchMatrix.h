@@ -60,7 +60,7 @@ extern stimulationStateEnum NextStimulationState;
 extern volatile int disableStimulationFlag;
 
 extern unsigned int jitterTableCounter;
-extern const unsigned int jitterValueTable[];
+extern unsigned int jitterValueTable[];
 extern const unsigned int jitterTableLength;
 
 void SetupSwitchMatrix(void);

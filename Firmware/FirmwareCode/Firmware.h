@@ -49,8 +49,8 @@
 /* Program coordination variables */
 extern volatile unsigned char KernelWakeupFlag;                         // status variable
 
-#define PROTOCOL_VERSION 5
-#define DEFAULT_DEVICE_IDSTR "0005"
+#define PROTOCOL_VERSION 6
+#define DEFAULT_DEVICE_IDSTR "0006"
 
 /* Device ID variables */
 typedef struct __attribute__((__packed__)) DeviceID_t {
