@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE eagle SYSTEM "eagle.dtd">
-<eagle version="7.7.0">
+<eagle version="8.2.2">
 <drawing>
 <settings>
 <setting alwaysvectorfont="no"/>
@@ -6969,7 +6969,7 @@ at 30/07/2012 17:45:58</description>
 <part name="TS3A4751_0" library="BiphasicBoard" deviceset="TS3A4751" device="" value="SW"/>
 <part name="LED6" library="SparkFun-LED" deviceset="LED" device="1206" value="RED"/>
 <part name="R_LOAD_EX" library="BiphasicBoard" deviceset="R-US_" device="R0603" value="10k"/>
-<part name="R_LED" library="BiphasicBoard" deviceset="R-US_" device="R0603" value="R_LEDR"/>
+<part name="R_LEDR" library="BiphasicBoard" deviceset="R-US_" device="R0603" value="10k"/>
 <part name="JP1" library="SparkFun" deviceset="M04" device="1.27MM"/>
 <part name="STIM" library="Samtec50Mil" deviceset="FTSH-102" device=""/>
 <part name="GND2" library="supply1" deviceset="GND" device=""/>
@@ -6991,8 +6991,8 @@ at 30/07/2012 17:45:58</description>
 <part name="GND10" library="supply1" deviceset="GND" device=""/>
 <part name="C_VC" library="rcl" deviceset="C-EU" device="C0603" value="0.47µ"/>
 <part name="C2" library="rcl" deviceset="C-EU" device="C0603" value="0.1u"/>
-<part name="ANT" library="Samtec50Mil" deviceset="FTSH-102" device=""/>
-<part name="CANT" library="rcl" deviceset="C-EU" device="C0603" value="C_NFC"/>
+<part name="ANT" library="Samtec50Mil" deviceset="FTSH-102" device="" value="3.3uH"/>
+<part name="CANT" library="rcl" deviceset="C-EU" device="C0603" value="8pF"/>
 <part name="BAT1" library="Battery" deviceset="BATTERY" device="" value="20mm coincell"/>
 <part name="GND11" library="supply1" deviceset="GND" device=""/>
 <part name="C1" library="rcl" deviceset="C-EU" device="C0603" value="1u"/>
@@ -7005,9 +7005,9 @@ at 30/07/2012 17:45:58</description>
 <part name="U2" library="Texas Instruments_By_element14_Batch_1" deviceset="LP2985A-33DBVTE4" device="" value="5V"/>
 <part name="C4" library="rcl" deviceset="C-EU" device="C1206" value="10u"/>
 <part name="GND12" library="supply1" deviceset="GND" device=""/>
-<part name="RDIV_2" library="BiphasicBoard" deviceset="R-US_" device="R0603" value="RDIV_LOW"/>
-<part name="RDIV_1" library="BiphasicBoard" deviceset="R-US_" device="R0603" value="RDIV_HIGH"/>
-<part name="R_LED1" library="BiphasicBoard" deviceset="R-US_" device="R0603" value="R_LEDG"/>
+<part name="RDIV_LOW" library="BiphasicBoard" deviceset="R-US_" device="R0603" value="10k"/>
+<part name="RDIV_HIGH" library="BiphasicBoard" deviceset="R-US_" device="R0603" value="20k"/>
+<part name="R_LEDG" library="BiphasicBoard" deviceset="R-US_" device="R0603" value="10k"/>
 <part name="LED1" library="SparkFun-LED" deviceset="LED" device="1206" value="GREEN"/>
 <part name="GND14" library="supply1" deviceset="GND" device=""/>
 </parts>
@@ -7025,7 +7025,7 @@ at 30/07/2012 17:45:58</description>
 <instance part="TS3A4751_0" gate="G$1" x="-25.4" y="27.94"/>
 <instance part="LED6" gate="G$1" x="43.18" y="53.34" rot="R90"/>
 <instance part="R_LOAD_EX" gate="G$1" x="-63.5" y="7.62"/>
-<instance part="R_LED" gate="G$1" x="30.48" y="53.34"/>
+<instance part="R_LEDR" gate="G$1" x="30.48" y="53.34"/>
 <instance part="JP1" gate="G$1" x="-68.58" y="109.22" rot="R180"/>
 <instance part="STIM" gate="G$1" x="-76.2" y="7.62"/>
 <instance part="GND2" gate="1" x="53.34" y="48.26"/>
@@ -7061,9 +7061,9 @@ at 30/07/2012 17:45:58</description>
 <instance part="U2" gate="A" x="-165.1" y="-10.16"/>
 <instance part="C4" gate="G$1" x="10.16" y="104.14"/>
 <instance part="GND12" gate="1" x="-76.2" y="71.12"/>
-<instance part="RDIV_2" gate="G$1" x="-76.2" y="81.28" rot="R90"/>
-<instance part="RDIV_1" gate="G$1" x="-91.44" y="88.9"/>
-<instance part="R_LED1" gate="G$1" x="27.94" y="43.18"/>
+<instance part="RDIV_LOW" gate="G$1" x="-76.2" y="81.28" rot="R90"/>
+<instance part="RDIV_HIGH" gate="G$1" x="-91.44" y="88.9"/>
+<instance part="R_LEDG" gate="G$1" x="27.94" y="43.18"/>
 <instance part="LED1" gate="G$1" x="40.64" y="43.18" rot="R90"/>
 <instance part="GND14" gate="1" x="50.8" y="38.1"/>
 </instances>
@@ -7278,7 +7278,7 @@ at 30/07/2012 17:45:58</description>
 </segment>
 <segment>
 <pinref part="GND12" gate="1" pin="GND"/>
-<pinref part="RDIV_2" gate="G$1" pin="1"/>
+<pinref part="RDIV_LOW" gate="G$1" pin="1"/>
 <wire x1="-76.2" y1="73.66" x2="-76.2" y2="76.2" width="0.1524" layer="91"/>
 </segment>
 <segment>
@@ -7409,7 +7409,7 @@ at 30/07/2012 17:45:58</description>
 <pinref part="MSP430" gate="G$1" pin="13"/>
 <wire x1="5.08" y1="63.5" x2="22.86" y2="63.5" width="0.1524" layer="91"/>
 <wire x1="22.86" y1="63.5" x2="22.86" y2="53.34" width="0.1524" layer="91"/>
-<pinref part="R_LED" gate="G$1" pin="1"/>
+<pinref part="R_LEDR" gate="G$1" pin="1"/>
 <wire x1="22.86" y1="53.34" x2="25.4" y2="53.34" width="0.1524" layer="91"/>
 </segment>
 </net>
@@ -7478,7 +7478,7 @@ at 30/07/2012 17:45:58</description>
 </net>
 <net name="N$9" class="0">
 <segment>
-<pinref part="R_LED" gate="G$1" pin="2"/>
+<pinref part="R_LEDR" gate="G$1" pin="2"/>
 <pinref part="LED6" gate="G$1" pin="A"/>
 <wire x1="35.56" y1="53.34" x2="40.64" y2="53.34" width="0.1524" layer="91"/>
 </segment>
@@ -7530,7 +7530,7 @@ at 30/07/2012 17:45:58</description>
 <wire x1="-210.82" y1="-5.08" x2="-195.58" y2="-5.08" width="0.1524" layer="91"/>
 </segment>
 <segment>
-<pinref part="RDIV_1" gate="G$1" pin="1"/>
+<pinref part="RDIV_HIGH" gate="G$1" pin="1"/>
 <wire x1="-96.52" y1="88.9" x2="-106.68" y2="88.9" width="0.1524" layer="91"/>
 <label x="-106.68" y="88.9" size="1.778" layer="95"/>
 </segment>
@@ -7561,11 +7561,11 @@ at 30/07/2012 17:45:58</description>
 <wire x1="-43.18" y1="68.58" x2="-66.04" y2="68.58" width="0.1524" layer="91"/>
 <wire x1="-66.04" y1="68.58" x2="-66.04" y2="88.9" width="0.1524" layer="91"/>
 <wire x1="-66.04" y1="88.9" x2="-76.2" y2="88.9" width="0.1524" layer="91"/>
-<pinref part="RDIV_2" gate="G$1" pin="2"/>
+<pinref part="RDIV_LOW" gate="G$1" pin="2"/>
 <wire x1="-76.2" y1="88.9" x2="-76.2" y2="86.36" width="0.1524" layer="91"/>
 <wire x1="-76.2" y1="88.9" x2="-86.36" y2="88.9" width="0.1524" layer="91"/>
 <junction x="-76.2" y="88.9"/>
-<pinref part="RDIV_1" gate="G$1" pin="2"/>
+<pinref part="RDIV_HIGH" gate="G$1" pin="2"/>
 </segment>
 </net>
 <net name="N$11" class="0">
@@ -7574,12 +7574,12 @@ at 30/07/2012 17:45:58</description>
 <wire x1="5.08" y1="60.96" x2="20.32" y2="60.96" width="0.1524" layer="91"/>
 <wire x1="20.32" y1="60.96" x2="20.32" y2="43.18" width="0.1524" layer="91"/>
 <wire x1="20.32" y1="43.18" x2="22.86" y2="43.18" width="0.1524" layer="91"/>
-<pinref part="R_LED1" gate="G$1" pin="1"/>
+<pinref part="R_LEDG" gate="G$1" pin="1"/>
 </segment>
 </net>
 <net name="N$13" class="0">
 <segment>
-<pinref part="R_LED1" gate="G$1" pin="2"/>
+<pinref part="R_LEDG" gate="G$1" pin="2"/>
 <wire x1="33.02" y1="43.18" x2="38.1" y2="43.18" width="0.1524" layer="91"/>
 <pinref part="LED1" gate="G$1" pin="A"/>
 </segment>
